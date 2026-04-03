@@ -71,7 +71,7 @@
     .hdiv{display:none;}
 
     /* ── Main content ── */
-    main{flex:1;padding:24px 28px 48px;display:flex;flex-direction:column;gap:20px;min-width:0;overflow-x:hidden;}
+    main{flex:1;padding:24px 28px 48px;display:flex;flex-direction:column;gap:20px;min-width:0;overflow-x:hidden;max-width:1200px;}
 
     /* ── Section header ── */
     .sec-hd{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
@@ -321,6 +321,109 @@
   </style>
 </head>
 <body>
+
+<!-- ── パスワード画面 ── -->
+<div id="pw-overlay" style="position:fixed;inset:0;z-index:9999;background:#F1F5F9;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:16px;padding:40px 44px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.10);text-align:center;">
+    <div style="font-family:'M PLUS Rounded 1c',sans-serif;font-size:13px;font-weight:900;letter-spacing:.22em;color:#1B3A5C;margin-bottom:4px;">PINTHOME</div>
+    <div style="font-family:'M PLUS Rounded 1c',sans-serif;font-size:10px;letter-spacing:.14em;color:#94A3B8;margin-bottom:28px;">MORTGAGE SIMULATOR</div>
+    <div style="font-family:'M PLUS Rounded 1c',sans-serif;font-size:14px;font-weight:700;color:#0F172A;margin-bottom:20px;">パスワードを入力してください</div>
+    <input id="pw-input" type="password" placeholder="Password" style="width:100%;padding:12px 16px;border:1.5px solid #CBD5E1;border-radius:10px;font-size:16px;font-family:'M PLUS 1p',sans-serif;color:#0F172A;background:#F8FAFC;outline:none;text-align:center;letter-spacing:.14em;margin-bottom:8px;" onkeydown="if(event.key==='Enter')checkPw()">
+    <div id="pw-err" style="font-size:11px;color:#DC2626;min-height:18px;margin-bottom:10px;font-family:'M PLUS Rounded 1c',sans-serif;"></div>
+    <button onclick="checkPw()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#1E40AF;color:#FFFFFF;font-family:'M PLUS Rounded 1c',sans-serif;font-size:14px;font-weight:700;cursor:pointer;" onmouseover="this.style.background='#1E3A8A'" onmouseout="this.style.background='#1E40AF'">ログイン</button>
+  </div>
+</div>
+<script>
+// ── 認証（SHA-256ハッシュ比較 + 多重防御） ──────────────────────────────
+// パスワード平文はソース上に存在しない。ハッシュのみ保持。
+;(function(){
+  'use strict';
+
+  // SHA-256（Web Crypto API で照合）
+  const TARGET='548c4be09341a8d2ed1815922e7f932cb26807276dd022a72618580d0fab1dc8';
+  // sessionStorage のキー自体もハッシュの先頭16文字で難読化
+  const SK=TARGET.slice(0,16);
+
+  const ov=document.getElementById('pw-overlay');
+  const inp=document.getElementById('pw-input');
+  const err=document.getElementById('pw-err');
+
+  // ──① 正規解除フラグチェック（sessionStorageも難読化）
+  function isAuthed(){
+    try{return sessionStorage.getItem(SK)===TARGET.slice(16,32);}catch(e){return false;}
+  }
+  if(isAuthed()){ov.style.display='none';}
+
+  // ──② DevTools 検出 → コンテンツをブラー
+  let dtOpen=false;
+  function detectDT(){
+    const t=new Date();
+    // debugger を呼ぶと実行に時間がかかることを利用
+    // eslint-disable-next-line no-debugger
+    debugger;
+    if(new Date()-t>80){
+      if(!dtOpen){dtOpen=true;applyDTBlur();}
+    } else {
+      if(dtOpen){dtOpen=false;if(isAuthed())removeDTBlur();}
+    }
+  }
+  function applyDTBlur(){
+    const b=document.getElementById('dt-blur-layer')||document.createElement('div');
+    b.id='dt-blur-layer';
+    b.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;';
+    b.innerHTML='<div style="color:#fff;font-family:sans-serif;font-size:15px;font-weight:600;text-align:center;padding:32px;">開発者ツールが検出されました<br><span style="font-size:12px;opacity:.7;font-weight:400;margin-top:8px;display:block;">閉じると自動的に解除されます</span></div>';
+    document.body.appendChild(b);
+  }
+  function removeDTBlur(){
+    document.getElementById('dt-blur-layer')?.remove();
+  }
+  setInterval(detectDT,800);
+
+  // ──③ キーボードショートカット無効化（F12 / Ctrl+Shift+I/J/U/C）
+  document.addEventListener('keydown',e=>{
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key))||(e.ctrlKey&&e.key==='U')){
+      e.preventDefault();e.stopPropagation();return false;
+    }
+  },true);
+
+  // ──④ 右クリック無効
+  document.addEventListener('contextmenu',e=>{
+    if(!isAuthed())e.preventDefault();
+  });
+
+  // ──⑤ MutationObserver でオーバーレイ削除を検知して復元
+  const obs=new MutationObserver(()=>{
+    if(!isAuthed()&&!document.getElementById('pw-overlay')){
+      document.body.appendChild(ov);
+      ov.style.display='flex';
+    }
+  });
+  obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+
+  // ──⑥ パスワード照合（SHA-256 / Web Crypto API）
+  async function digest(str){
+    const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+
+  window.checkPw=async function(){
+    const v=inp?.value||'';
+    if(!v)return;
+    const h=await digest(v);
+    if(h===TARGET){
+      try{sessionStorage.setItem(SK,TARGET.slice(16,32));}catch(e){}
+      ov.style.transition='opacity .35s';ov.style.opacity='0';
+      setTimeout(()=>{ov.style.display='none';},360);
+    } else {
+      if(err){err.textContent='パスワードが違います';}
+      if(inp){inp.style.borderColor='#DC2626';inp.value='';inp.focus();}
+      setTimeout(()=>{if(err)err.textContent='';if(inp)inp.style.borderColor='#CBD5E1';},2000);
+    }
+  };
+
+  setTimeout(()=>{inp?.focus();},120);
+})();
+</script>
 
 <!-- ── Sidebar ── -->
 <div class="app-shell">
