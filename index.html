@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>固定 vs 変動 金利シミュレーター | PINTHOME</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700;900&family=M+PLUS+1p:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --fr:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;
+      --fg:'M PLUS 1p','Hiragino Kaku Gothic Pro',sans-serif;
+      --tx:#0F172A;--tx2:#475569;--tx3:#94A3B8;
+      --ac:#1E40AF;   /* primary navy */
+      --ac2:#3B82F6;  /* bright blue */
+      --cf:#1E40AF;--c1:#0D9488;--c2:#4F46E5;--c3:#DC2626;
+      --bg:#F1F5F9;--sf:#FFFFFF;--bd:#CBD5E1;--bdl:#E2E8F0;
+      --sidebar:#1E293B;--sidebar-active:#334155;
+      --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+      --sh-md:0 4px 12px rgba(0,0,0,.10),0 2px 4px rgba(0,0,0,.06);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{font-family:var(--fg);color:var(--tx);font-size:14px;line-height:1.6;
+      -webkit-font-smoothing:antialiased;background:var(--bg);min-height:100vh;
+      display:flex;flex-direction:column;}
+
+    /* ── App shell ── */
+    .app-shell{display:flex;flex:1;min-height:0;}
+
+    /* ── Sidebar ── */
+    .sidebar{width:220px;flex-shrink:0;background:var(--sidebar);display:flex;flex-direction:column;
+      position:sticky;top:0;height:100vh;overflow-y:auto;}
+    .sidebar-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
+    .sidebar-brand{font-family:var(--fr);font-size:14px;font-weight:900;letter-spacing:.22em;
+      color:#FFFFFF;display:flex;align-items:center;gap:10px;}
+    .sidebar-brand svg{opacity:.9;}
+    .sidebar-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;letter-spacing:.06em;}
+    .sidebar-section{padding:20px 12px 8px;font-family:var(--fr);font-size:9px;font-weight:700;
+      letter-spacing:.18em;color:rgba(255,255,255,.3);text-transform:uppercase;}
+    .sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 14px;
+      border-radius:8px;margin:2px 8px;cursor:pointer;text-decoration:none;
+      font-family:var(--fr);font-size:12px;font-weight:500;color:rgba(255,255,255,.62);
+      transition:all .15s;border:none;background:transparent;width:calc(100% - 16px);text-align:left;}
+    .sidebar-item:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9);}
+    .sidebar-item.active{background:#2563EB;color:#FFFFFF;box-shadow:0 2px 8px rgba(37,99,235,.4);}
+    .sidebar-item .si-ico{width:16px;height:16px;flex-shrink:0;opacity:.8;}
+    .sidebar-item.active .si-ico{opacity:1;}
+    .sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid rgba(255,255,255,.08);}
+    .sidebar-footer-btn{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;
+      background:rgba(37,99,235,.25);border:1px solid rgba(37,99,235,.4);cursor:pointer;
+      font-family:var(--fr);font-size:12px;font-weight:700;color:#93C5FD;width:100%;transition:all .15s;}
+    .sidebar-footer-btn:hover{background:rgba(37,99,235,.4);}
+
+    /* ── Top bar ── */
+    header{background:var(--sf);border-bottom:1px solid var(--bdl);height:52px;padding:0 28px;
+      display:flex;align-items:center;justify-content:space-between;
+      box-shadow:0 1px 0 var(--bdl);flex-shrink:0;}
+    .hl{display:flex;align-items:center;gap:14px;}
+    .htit h1{font-family:var(--fr);font-size:15px;font-weight:700;color:var(--tx);}
+    .htit p{font-size:11px;color:var(--tx3);}
+    .hright{display:flex;align-items:center;gap:8px;}
+    .updated{font-size:10px;color:var(--tx3);letter-spacing:.04em;
+      background:var(--bg);padding:4px 10px;border-radius:6px;border:1px solid var(--bdl);}
+    .pbtn{display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--bdl);
+      border-radius:8px;background:#FFFFFF;font-family:var(--fr);font-size:12px;font-weight:600;
+      color:var(--tx2);cursor:pointer;transition:all .15s;box-shadow:var(--sh);}
+    .pbtn:hover{background:var(--ac);color:#FFFFFF;border-color:var(--ac);}
+    .hdiv{display:none;}
+
+    /* ── Main content ── */
+    main{flex:1;padding:24px 28px 48px;display:flex;flex-direction:column;gap:20px;min-width:0;overflow-x:hidden;}
+
+    /* ── Section header ── */
+    .sec-hd{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+    .sec-hd h2{font-family:var(--fr);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--tx);}
+    .sec-hd .sec-line{flex:1;height:1px;background:var(--bdl);}
+
+    /* ── Cards ── */
+    .card{background:var(--sf);border:1px solid var(--bdl);border-radius:12px;padding:20px 24px;box-shadow:var(--sh);}
+    .card::after{content:none;}
+    .sl{font-family:var(--fr);font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--tx3);
+      margin-bottom:14px;display:flex;align-items:center;gap:7px;text-transform:uppercase;}
+    .sl .ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+      border-radius:6px;background:#EFF6FF;color:var(--ac);flex-shrink:0;}
+    .src-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--tx3);
+      background:var(--bg);border:1px solid var(--bdl);border-radius:6px;padding:4px 10px;margin-bottom:14px;}
+
+    /* ── KPI strip cards ── */
+    .kpi-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+    .kpi{background:var(--sf);border:1px solid var(--bdl);border-radius:12px;
+      padding:18px 22px;box-shadow:var(--sh);position:relative;overflow:hidden;}
+    .kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:12px 0 0 12px;}
+    .kpi-fix::before{background:var(--cf);}
+    .kpi-var::before{background:var(--c1);}
+    .kpi-diff::before{background:#7C3AED;}
+    .kpi-lbl{font-family:var(--fr);font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:8px;
+      display:flex;align-items:center;gap:6px;}
+    .kpi-val{font-size:30px;font-weight:300;letter-spacing:-.03em;font-feature-settings:"tnum";line-height:1;}
+    .kpi-note{font-size:11px;color:var(--tx3);margin-top:6px;}
+
+    /* ── Input grid ── */
+    .igrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:end;}
+    .ilbl{display:flex;justify-content:space-between;font-family:var(--fr);font-size:11px;font-weight:600;
+      color:var(--tx2);letter-spacing:.02em;margin-bottom:6px;}
+    .idisp{color:var(--ac2);font-weight:700;}
+    .iw{display:flex;align-items:center;gap:8px;}
+    input[type=number]{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--bdl);
+      border-radius:8px;font-family:var(--fg);font-size:15px;font-weight:500;color:var(--tx);
+      background:#FAFBFC;outline:none;transition:all .15s;-moz-appearance:textfield;}
+    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+    input[type=number]:focus{border-color:var(--ac2);background:#FFFFFF;box-shadow:0 0 0 3px rgba(59,130,246,.12);}
+    input[type=text],input[type=date],textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bdl);
+      border-radius:8px;font-family:var(--fg);font-size:14px;color:var(--tx);background:#FAFBFC;outline:none;transition:all .15s;}
+    input[type=text]:focus,input[type=date]:focus,textarea:focus{border-color:var(--ac2);box-shadow:0 0 0 3px rgba(59,130,246,.12);}
+    textarea{resize:vertical;min-height:72px;}
+    .un{font-family:var(--fr);font-size:12px;color:var(--tx3);white-space:nowrap;}
+    select{width:100%;padding:9px 12px;border:1.5px solid var(--bdl);border-radius:8px;
+      font-family:var(--fg);font-size:15px;font-weight:500;color:var(--tx);
+      background:#FAFBFC;outline:none;cursor:pointer;transition:all .15s;}
+    select:focus{border-color:var(--ac2);}
+
+    /* ── Metric row (legacy compat) ── */
+    .mrow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+    .mc{background:var(--sf);border:1px solid var(--bdl);border-radius:12px;padding:18px 22px;box-shadow:var(--sh);}
+    .mlbl{font-family:var(--fr);font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:8px;}
+    .mval{font-size:28px;font-weight:300;letter-spacing:-.02em;font-feature-settings:"tnum";}
+    .mnote{font-size:11px;color:var(--tx3);margin-top:4px;}
+
+    /* ── Context bar ── */
+    .ctx-bar{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;
+      padding:12px 16px;font-size:12px;color:#1E3A8A;line-height:1.85;}
+    .ctx-bar strong{font-weight:700;}
+
+    /* ── Scenario cards ── */
+    .sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+    .sc{background:var(--sf);border:1px solid var(--bdl);border-top:3px solid;border-radius:12px;
+      padding:18px 20px;box-shadow:var(--sh);}
+    .sc.s1{border-top-color:var(--c1);}.sc.s2{border-top-color:var(--c2);}.sc.s3{border-top-color:var(--c3);}
+    .sch{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+    .scn{font-family:var(--fr);font-size:14px;font-weight:700;}
+    .s1 .scn{color:var(--c1);}.s2 .scn{color:var(--c2);}.s3 .scn{color:var(--c3);}
+    .scbdg{font-family:var(--fr);font-size:10px;font-weight:600;color:var(--tx3);
+      background:var(--bg);padding:3px 9px;border-radius:20px;border:1px solid var(--bdl);}
+    .scd{font-size:11px;color:var(--tx2);line-height:1.65;margin-bottom:8px;min-height:34px;}
+    .sc-spark{margin-bottom:8px;}
+    .scst{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid var(--bdl);padding-top:10px;}
+    .ssl{font-family:var(--fr);font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--tx3);margin-bottom:3px;}
+    .ssv{font-size:12px;font-weight:600;}
+
+    /* ── Table ── */
+    .mvhdr{display:flex;align-items:center;gap:20px;margin-bottom:16px;flex-wrap:wrap;}
+    .mvctl{display:flex;align-items:center;gap:10px;}
+    .mvctl label{font-family:var(--fr);font-size:12px;color:var(--tx2);font-weight:600;white-space:nowrap;}
+    .mvctl input{width:80px;}
+    .mvyr{font-size:13px;color:var(--tx2);}
+    table.mvtbl{width:100%;border-collapse:collapse;}
+    table.mvtbl th{font-family:var(--fr);font-size:11px;font-weight:700;color:var(--tx3);
+      padding:9px 12px;text-align:right;border-bottom:2px solid var(--bdl);background:#F8FAFC;}
+    table.mvtbl th:first-child{text-align:left;}
+    table.mvtbl th.cf{color:var(--cf);}table.mvtbl th.c1{color:var(--c1);}
+    table.mvtbl th.c2{color:var(--c2);}table.mvtbl th.c3{color:var(--c3);}
+    table.mvtbl td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--bdl);text-align:right;}
+    table.mvtbl td:first-child{text-align:left;font-size:11px;color:var(--tx3);font-weight:500;}
+    table.mvtbl tr:hover td{background:#F8FAFC;}
+    table.mvtbl tr:last-child td{border-bottom:none;}
+    .mvnote{font-size:11px;color:var(--tx2);margin-top:12px;line-height:1.9;
+      padding:12px 16px;background:var(--bg);border-radius:8px;border:1px solid var(--bdl);}
+
+    /* ── Switch sim ── */
+    .swgrid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+    .swlbl{font-family:var(--fr);font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:7px;}
+    .swres{background:var(--bg);border-radius:10px;padding:16px 20px;margin-bottom:14px;border:1px solid var(--bdl);}
+    .swrlbl{font-family:var(--fr);font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--tx3);margin-bottom:12px;}
+    .swst{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+    .swsl{font-family:var(--fr);font-size:10px;color:var(--tx3);margin-bottom:3px;}
+    .swsv{font-size:14px;font-weight:600;}
+    .swg{font-size:12px;color:var(--tx2);line-height:1.95;}
+    .swg strong{color:var(--ac);font-weight:700;}
+
+    /* ── Chart ── */
+    .chhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+    .chtit{font-family:var(--fr);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+    .tabgrp{display:flex;background:var(--bg);border:1px solid var(--bdl);border-radius:8px;padding:3px;}
+    .tbtn{padding:5px 14px;border:none;border-radius:6px;background:transparent;
+      font-family:var(--fr);font-size:12px;font-weight:500;color:var(--tx3);cursor:pointer;transition:all .15s;}
+    .tbtn.on{background:#FFFFFF;color:var(--tx);font-weight:700;box-shadow:var(--sh);}
+    .lgnd{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
+    .lgit{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);}
+
+    /* ── Chart donut container ── */
+    .chart-2col{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+    .donut-wrap{position:relative;width:160px;height:160px;margin:0 auto;}
+
+    /* ── Insight ── */
+    .insight{background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid var(--ac);
+      border-radius:0 12px 12px 0;padding:18px 22px;box-shadow:var(--sh);}
+    .inslbl{font-family:var(--fr);font-size:10px;font-weight:900;letter-spacing:.18em;color:var(--ac);
+      margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+    .inslbl .ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+      border-radius:6px;background:#DBEAFE;color:var(--ac);flex-shrink:0;}
+    .instxt{font-size:13px;line-height:2.1;}
+    .instxt strong{font-weight:700;color:var(--ac);}
+
+    /* ── Life Plan ── */
+    .lp-mrow{display:flex;align-items:center;gap:8px;padding:8px 12px;
+      border:1.5px solid var(--bdl);border-radius:8px;background:#FAFBFC;transition:all .15s;}
+    .lp-mrow.lp-dim{opacity:.4;}
+    .lp-mlbl{font-family:var(--fr);font-size:12px;font-weight:600;color:var(--tx);min-width:38px;}
+    .lp-age-wrap{display:flex;align-items:center;gap:4px;margin-left:auto;}
+    .lp-age-inp{width:52px;padding:5px 9px;font-size:14px;font-weight:500;border:1.5px solid var(--bdl);
+      border-radius:7px;background:#FFFFFF;font-family:var(--fg);outline:none;-moz-appearance:textfield;
+      color:var(--tx);transition:all .15s;}
+    .lp-age-inp:focus{border-color:var(--ac2);box-shadow:0 0 0 2px rgba(59,130,246,.10);}
+    .lp-age-inp:disabled{background:var(--bg);color:var(--tx3);}
+    .lp-age-inp::-webkit-outer-spin-button,.lp-age-inp::-webkit-inner-spin-button{-webkit-appearance:none;}
+    .lp-agt{font-family:var(--fr);font-size:11px;color:var(--tx3);}
+    .lp-stage-chip{font-family:var(--fr);font-size:10px;font-weight:700;padding:3px 10px;
+      border-radius:20px;display:inline-block;margin-top:6px;}
+
+    /* ── Footer ── */
+    footer{background:var(--sf);border-top:1px solid var(--bdl);padding:16px 28px;}
+    .ftin{max-width:100%;font-size:11px;color:var(--tx3);line-height:1.9;}
+
+    /* ── Modal ── */
+    .modal-ov{display:none;position:fixed;inset:0;background:rgba(2,8,23,.5);z-index:200;
+      align-items:flex-start;justify-content:center;overflow-y:auto;padding:28px 16px;}
+    .modal-ov.open{display:flex;}
+    .modal-box{background:#FFFFFF;border-radius:16px;max-width:740px;width:100%;overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,.2);}
+    .modal-hd{background:var(--ac);padding:20px 28px;display:flex;justify-content:space-between;align-items:center;}
+    .modal-hd h2{font-family:var(--fr);font-size:16px;font-weight:700;color:white;letter-spacing:.04em;}
+    .modal-hd p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+    .modal-close{background:transparent;border:none;color:rgba(255,255,255,.75);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px;}
+    .modal-close:hover{color:white;}
+    .modal-body{padding:24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+    .modal-section-title{font-family:var(--fr);font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--tx3);margin-bottom:12px;}
+    .form-row{margin-bottom:14px;}
+    .form-row label{display:block;font-family:var(--fr);font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:5px;}
+    .form-row label .req{color:var(--c3);margin-left:3px;}
+    .cb-group{display:flex;flex-direction:column;gap:0;}
+    .cb-section{font-family:var(--fr);font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--tx3);
+      padding:8px 0 4px;border-top:1px solid var(--bdl);margin-top:4px;}
+    .cb-section:first-child{border-top:none;margin-top:0;padding-top:0;}
+    .cb-item{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;}
+    .cb-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--ac);cursor:pointer;flex-shrink:0;}
+    .cb-item span{font-size:12px;color:var(--tx);line-height:1.4;}
+    .modal-footer{padding:16px 28px;border-top:1px solid var(--bdl);display:flex;justify-content:flex-end;gap:10px;background:var(--bg);}
+    .btn{padding:9px 20px;border-radius:8px;font-family:var(--fr);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+    .btn-cancel{border:1px solid var(--bdl);background:#FFFFFF;color:var(--tx2);}
+    .btn-cancel:hover{border-color:var(--ac);color:var(--ac);}
+    .btn-pdf{border:none;background:var(--ac);color:white;display:flex;align-items:center;gap:6px;}
+    .btn-pdf:hover{background:#1E3A8A;}
+
+    /* ── Preview ── */
+    #preview-ov{display:none;position:fixed;inset:0;z-index:300;flex-direction:column;background:#0F1728;}
+    #preview-ov.open{display:flex;}
+    .preview-bar{background:#1E293B;padding:10px 18px;display:flex;align-items:center;gap:12px;
+      flex-shrink:0;border-bottom:1px solid #334155;}
+    .preview-bar-title{font-family:var(--fr);font-size:13px;color:#CBD5E1;flex:1;}
+    .pbar-btn{display:flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;
+      font-family:var(--fr);font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .15s;}
+    .pbar-btn.print{background:#2563EB;color:white;}.pbar-btn.print:hover{background:#1D4ED8;}
+    .pbar-btn.close{background:#334155;color:#94A3B8;}.pbar-btn.close:hover{background:#475569;}
+    .pbar-hint{font-size:11px;color:#64748B;white-space:nowrap;}
+    #preview-frame{flex:1;width:100%;border:none;background:white;}
+
+    /* ── Responsive ── */
+    @media(max-width:1100px){
+      .sidebar{width:56px;overflow:hidden;}
+      .sidebar-brand span,.sidebar-sub,.sidebar-section,.sidebar-item span,.sidebar-footer-btn span{display:none;}
+      .sidebar-item{justify-content:center;padding:10px;}
+      .sidebar-logo{padding:14px 8px;}
+      .sidebar-footer{padding:10px 8px;}
+      .sidebar-footer-btn{justify-content:center;padding:10px;}
+      main{padding:20px 20px 40px;}
+    }
+    @media(max-width:860px){
+      .igrid{grid-template-columns:1fr 1fr;gap:12px;}
+      .kpi-strip,.mrow{grid-template-columns:1fr 1fr;}
+      .sgrid{grid-template-columns:1fr 1fr;}
+      .swgrid{grid-template-columns:1fr;}
+      .chart-2col{grid-template-columns:1fr;}
+      .modal-body{grid-template-columns:1fr;}
+      .chhdr{flex-direction:column;align-items:flex-start;}
+    }
+    @media(max-width:640px){
+      .sidebar{display:none;}
+      header{padding:0 16px;}
+      main{padding:14px 14px 40px;gap:14px;}
+      .card{padding:16px;}
+      .kpi-strip,.mrow,.sgrid{grid-template-columns:1fr;}
+      .igrid{grid-template-columns:1fr 1fr;gap:10px;}
+      .swgrid{grid-template-columns:1fr;}
+      .chart-wrap{height:200px!important;}
+    }
+    /* ── LP Tab panel ── */
+    .lp-tab{display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 6px;
+      border:none;background:transparent;font-family:var(--fr);font-size:11px;font-weight:600;
+      color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+    .lp-tab:hover{color:var(--tx2);}
+    .lp-tab.active{color:var(--ac);border-bottom-color:var(--ac);background:#FFFFFF;}
+    .lp-tab-pane{overflow-y:visible;max-height:none;}
+    #sw-body{transition:all .2s;overflow:hidden;}
+    .lp-inp-lbl{font-family:var(--fr);font-size:10px;font-weight:700;letter-spacing:.14em;
+      color:var(--tx3);margin-bottom:8px;text-transform:uppercase;}
+
+    /* ── Age bar ── */
+    .age-bar-strip{display:flex;overflow-x:auto;gap:0;font-family:var(--fr);}
+    .age-bar-cell{flex-shrink:0;text-align:center;font-size:9px;padding:2px 0;border-right:1px solid #E2E8F0;}
+    .age-bar-cell:last-child{border-right:none;}
+
+    /* ── Responsive LP ── */
+    @media(max-width:900px){
+      #lp-card > div[style*="grid-template-columns:260px"]{grid-template-columns:1fr!important;}
+      #lp-card > div > div:first-child{border-right:none!important;border-bottom:1px solid var(--bdl);}
+      .lp-tab-pane{}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<div class="app-shell">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3L21 9.5V20H15V14H9V20H3V9.5Z" stroke="white" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span>PINTHOME</span>
+    </div>
+    <div class="sidebar-sub">MORTGAGE SIMULATOR</div>
+  </div>
+
+  <div class="sidebar-section">シミュレーション</div>
+  <button class="sidebar-item active" onclick="scrollTo_(0)">
+    <svg class="si-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="10" width="4" height="8" rx="1"/><rect x="8" y="6" width="4" height="12" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/></svg>
+    <span>借入条件</span>
+  </button>
+  <button class="sidebar-item" onclick="scrollTo_('mv-section')">
+    <svg class="si-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7L7 3L11 7M7 3V13"/><path d="M17 13L13 17L9 13M13 17V7"/></svg>
+    <span>住み替え分析</span>
+  </button>
+  <button class="sidebar-item" onclick="scrollTo_('sw-section')">
+    <svg class="si-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7H16M13 4L16 7L13 10"/><path d="M16 13H4M7 10L4 13L7 16"/></svg>
+    <span>切り替え最適化</span>
+  </button>
+  <button class="sidebar-item" onclick="scrollTo_('chart-section')">
+    <svg class="si-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,15 7,9 11,12 17,5"/></svg>
+    <span>グラフ分析</span>
+  </button>
+
+  <div class="sidebar-section">ライフプラン</div>
+  <button class="sidebar-item" onclick="scrollTo_('lp-card')">
+    <svg class="si-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="6.5" r="2.5"/><path d="M2 18C2 15 4 13 7 13C10 13 12 15 12 18"/><circle cx="14.5" cy="7.5" r="2"/><path d="M11.5 18C11.5 15.5 12.8 14 14.5 14C16.2 14 17.5 15.5 17.5 18"/></svg>
+    <span>家族・教育費</span>
+  </button>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-footer-btn" onclick="openModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 5h6M4 7.5h6M4 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span>レポート出力</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── Right side: header + main ── -->
+<div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;">
+
+<header>
+  <div class="hl">
+    <div class="htit">
+      <h1>固定 vs 変動 金利シミュレーター</h1>
+      <p>金利変動シナリオ別に返済コストを比較する</p>
+    </div>
+  </div>
+  <div class="hright">
+    <span class="updated">金利データ：2026年4月更新</span>
+    <button class="pbtn" onclick="openModal()">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 5h6M4 7.5h6M4 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      レポート出力
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="sl">借入条件</div>
+    <div class="src-badge">
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 5v4M6 3.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      金利初期値：フラット35 2.49%（2026年4月・住宅金融支援機構）、変動 0.80%（2026年4月・主要行実勢）
+    </div>
+    <div class="igrid">
+      <div><div class="ilbl">借入額 <span class="idisp" id="d-amt"></span></div><div class="iw"><input type="number" id="i-amt" value="4000" min="500" max="30000" step="100"><span class="un">万円</span></div></div>
+      <div><div class="ilbl">借入期間</div><select id="i-term"><option value="10">10年</option><option value="15">15年</option><option value="20">20年</option><option value="25">25年</option><option value="30">30年</option><option value="35" selected>35年</option><option value="40">40年</option><option value="45">45年</option><option value="50">50年</option></select></div>
+      <div><div class="ilbl">固定金利（全期間） <span class="idisp" id="d-fix"></span></div><div class="iw"><input type="number" id="i-fix" value="2.5" min="0.1" max="6.0" step="0.1"><span class="un">%</span></div></div>
+      <div><div class="ilbl">変動金利（現在） <span class="idisp" id="d-var"></span></div><div class="iw"><input type="number" id="i-var" value="0.8" min="0.1" max="5.0" step="0.1"><span class="un">%</span></div></div>
+    </div>
+    <!-- 変動金利ルール -->
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bdl);display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:11px;font-weight:600;color:var(--tx2);">変動金利ルール：</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;cursor:pointer;color:var(--tx);">
+        <input type="checkbox" id="i-5yr" onchange="toggle5Y()" style="accent-color:var(--ac);width:14px;height:14px;"> 5年ルール（5年間返済額固定）
+      </label>
+      <label id="lbl-125" style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--tx);opacity:.35;pointer-events:none;">
+        <input type="checkbox" id="i-125" disabled onchange="update()" style="accent-color:var(--ac);width:14px;height:14px;"> 125%ルール（増額上限・要5年ルール）
+      </label>
+      <span id="rule-status" style="font-size:10px;color:var(--tx3);">ルールなし：金利変動のたびに返済額を再計算（簡易モデル）</span>
+    </div>
+  </div>
+
+  <div class="mrow">
+    <div class="mc"><div class="mlbl">固定 — 初月返済額</div><div class="mval" id="m-fp" style="color:var(--cf)">—</div><div class="mnote">全期間固定（フラット35水準）</div></div>
+    <div class="mc"><div class="mlbl">変動 — 初月返済額（現在）</div><div class="mval" id="m-vp" style="color:var(--c1)">—</div><div class="mnote">金利変動前の返済額</div></div>
+    <div class="mc"><div class="mlbl">月額差（固定 − 変動）</div><div class="mval" id="m-dp">—</div><div class="mnote" id="m-dpn"></div></div>
+  </div>
+
+  <div class="ctx-bar" id="ctx-bar">—</div>
+
+  <div class="sgrid">
+    <div class="sc s1"><div class="sch"><span class="scn">楽観シナリオ</span><span class="scbdg">早期に正常化完了</span></div><div class="scd" id="sd1">—</div><div class="sc-spark" id="sc-spark-1"></div><div class="scst"><div><div class="ssl">総利息</div><div class="ssv" id="si1">—</div></div><div><div class="ssl">固定との差</div><div class="ssv" id="sc1">—</div></div><div><div class="ssl">逆転時期</div><div class="ssv" id="sb1">—</div></div></div></div>
+    <div class="sc s2"><div class="sch"><span class="scn">中立シナリオ</span><span class="scbdg">市場コンセンサス</span></div><div class="scd" id="sd2">—</div><div class="sc-spark" id="sc-spark-2"></div><div class="scst"><div><div class="ssl">総利息</div><div class="ssv" id="si2">—</div></div><div><div class="ssl">固定との差</div><div class="ssv" id="sc2">—</div></div><div><div class="ssl">逆転時期</div><div class="ssv" id="sb2">—</div></div></div></div>
+    <div class="sc s3"><div class="sch"><span class="scn">悲観シナリオ</span><span class="scbdg">円安・インフレ加速</span></div><div class="scd" id="sd3">—</div><div class="sc-spark" id="sc-spark-3"></div><div class="scst"><div><div class="ssl">総利息</div><div class="ssv" id="si3">—</div></div><div><div class="ssl">固定との差</div><div class="ssv" id="sc3">—</div></div><div><div class="ssl">逆転時期</div><div class="ssv" id="sb3">—</div></div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="sl">住み替え目線でみる</div>
+    <div id="mv-section">
+      <div class="mvctl"><label>住み替え想定時期</label><div class="iw"><input type="number" id="i-mv" value="10" min="1" max="30" step="1"><span class="un">年後</span></div></div>
+      <span class="mvyr" id="mv-yr">（借入から10年後の状況）</span>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <table class="mvtbl">
+      <thead><tr><th>項目</th><th class="cf">固定</th><th class="c1">楽観変動</th><th class="c2">中立変動</th><th class="c3">悲観変動</th></tr></thead>
+      <tbody>
+        <tr><td>残債（この金額以上の売却が必要）</td><td id="mvb-f">—</td><td id="mvb-1">—</td><td id="mvb-2">—</td><td id="mvb-3">—</td></tr>
+        <tr><td>それまでの利息累計</td><td id="mvi-f">—</td><td id="mvi-1">—</td><td id="mvi-2">—</td><td id="mvi-3">—</td></tr>
+        <tr><td>月あたり利息コスト</td><td id="mvm-f">—</td><td id="mvm-1">—</td><td id="mvm-2">—</td><td id="mvm-3">—</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="mvnote" id="mv-note">—</div>
+  </div>
+
+  <div class="card" id="sw-section">
+    <div class="sl" style="cursor:pointer;user-select:none;justify-content:space-between;" onclick="toggleSwSection()">
+      <span style="display:flex;align-items:center;gap:7px;">
+        <span class="ico"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7H16M13 4L16 7L13 10"/><path d="M16 13H4M7 10L4 13L7 16"/></svg></span>
+        変動 → 固定 切り替えシミュレーション
+      </span>
+      <span id="sw-toggle-icon" style="font-size:16px;color:var(--tx3);line-height:1;margin-left:auto;transition:transform .2s;">▲</span>
+    </div>
+    <div id="sw-body">
+      <div class="swgrid">
+        <!-- 左カラム：入力 -->
+        <div>
+          <div style="display:flex;flex-direction:column;gap:18px;margin-bottom:12px;">
+            <div>
+              <div class="swlbl">切り替え時期</div>
+              <div class="iw"><input type="number" id="i-sw-yr" value="5" min="1" max="49" step="1"><span class="un">年後に固定へ切り替え</span></div>
+            </div>
+            <div>
+              <div class="swlbl" style="margin-bottom:8px;">切り替え時の推計固定金利 <span style="font-family:var(--fr);font-size:9px;font-weight:700;background:#DBEEFF;color:#1B3A5C;padding:2px 8px;border-radius:10px;margin-left:6px;letter-spacing:.06em;">自動推計</span></div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+                <span id="sw-est-disp" style="font-size:28px;font-weight:300;color:var(--ac);letter-spacing:-.02em;">—</span>
+              </div>
+              <div id="sw-est-note" style="font-size:10px;color:var(--tx3);line-height:1.8;background:#F4F7FA;border-radius:8px;padding:8px 12px;"></div>
+              <div style="margin-top:10px;display:flex;align-items:center;gap:6px;">
+                <span style="font-size:10px;color:var(--tx3);">手動調整：</span>
+                <div class="iw"><input type="number" id="i-sw-r" value="2.5" min="0.1" max="6.0" step="0.01" style="width:80px;" oninput="swrManual=true;update()"><span class="un">%</span></div>
+                <button onclick="resetSwR()" style="font-family:var(--fr);font-size:10px;padding:3px 9px;border:1px solid rgba(100,150,220,.30);border-radius:8px;background:#EDF4FB;cursor:pointer;color:var(--tx3);">推計値に戻す</button>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:10px;color:var(--tx3);margin-bottom:12px;line-height:1.8;">中立シナリオの変動金利推移をベースに、変動上昇分の約60%を長期金利（固定）への転嫁として加算した推計値です。</p>
+          <div style="padding:12px 14px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;border-left:4px solid #F59E0B;">
+            <div style="font-family:var(--fr);font-size:10px;font-weight:700;color:#92400E;margin-bottom:6px;display:flex;align-items:center;gap:5px;">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#92400E" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 14v.5"/></svg>
+              変動→固定への切り替え（借り換え）にはコストがかかります
+            </div>
+            <div style="font-size:11px;color:#78350F;line-height:1.85;">
+              <strong>主な費用目安：</strong>保証料（借入残高の約0〜2%）、事務手数料（定額型 約3〜5万円、定率型 借入額×約2.2%）、登記費用（約5〜10万円）、印紙税・火災保険見直し等。
+              <br>合計で<strong>借入残高の1〜3%程度</strong>かかるケースが多く、この試算には含まれていません。
+              切り替え前に実際の諸費用をFPまたは金融機関で確認してください。
+            </div>
+          </div>
+        </div>
+        <!-- 右カラム：結果 -->
+        <div>
+          <div class="swres"><div class="swrlbl">試算結果（切り替え案）</div><div class="swst"><div><div class="swsl">総利息</div><div class="swsv" id="sw-tot">—</div></div><div><div class="swsl">固定との差</div><div class="swsv" id="sw-vf">—</div></div><div><div class="swsl">中立変動との差</div><div class="swsv" id="sw-vn">—</div></div></div></div>
+          <div class="swg" id="sw-guide">—</div>
+          <p style="font-size:10px;color:#92400E;margin-top:10px;padding:8px 12px;background:#FEF9EC;border-radius:8px;border:1px solid #FDE68A;line-height:1.75;">※ 上記試算は利息のみの比較です。実際の切り替え（借り換え）では諸費用（保証料・手数料・登記費用等）が別途発生します。差額がこれらのコストを上回るかどうかを必ずご確認ください。</p>
+        </div>
+      </div><!-- /swgrid -->
+      <div id="sw-optimal" style="margin-top:18px;padding-top:18px;border-top:1px solid var(--bdl);"></div>
+    </div><!-- /sw-body -->
+  </div><!-- /sw-section card -->
+
+  <div class="card" id="chart-section">
+    <div class="chhdr">
+      <span class="chtit">シナリオ別推移グラフ</span>
+      <div class="tabgrp">
+        <button class="tbtn on" data-k="interest" onclick="swTab(this)">累積利息</button>
+        <button class="tbtn" data-k="monthly" onclick="swTab(this)">月々返済額</button>
+        <button class="tbtn" data-k="total" onclick="swTab(this)">累積総支払</button>
+      </div>
+    </div>
+    <div class="lgnd">
+      <div class="lgit"><svg width="32" height="14"><line x1="0" y1="7" x2="32" y2="7" stroke="#003F87" stroke-width="3.5"/></svg>固定</div>
+      <div class="lgit"><svg width="32" height="14"><line x1="0" y1="7" x2="32" y2="7" stroke="#226B18" stroke-width="2.5" stroke-dasharray="10 5"/></svg>楽観変動</div>
+      <div class="lgit"><svg width="32" height="14"><line x1="0" y1="7" x2="32" y2="7" stroke="#A85C00" stroke-width="2.5" stroke-dasharray="4 4"/></svg>中立変動</div>
+      <div class="lgit"><svg width="32" height="14"><line x1="0" y1="7" x2="32" y2="7" stroke="#941010" stroke-width="2.5"/></svg>悲観変動</div>
+      <div class="lgit"><svg width="32" height="14"><line x1="0" y1="7" x2="32" y2="7" stroke="#52259A" stroke-width="2" stroke-dasharray="7 3 2 3"/></svg>切り替え案</div>
+      <div class="lgit"><svg width="32" height="14"><line x1="16" y1="2" x2="16" y2="12" stroke="rgba(122,79,43,.55)" stroke-width="1.5" stroke-dasharray="3 2"/></svg>住み替え時期</div>
+    </div>
+    <div class="chart-wrap" style="position:relative;height:340px;"><canvas id="mc"></canvas></div>
+    <p id="rule-note-txt" style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center;line-height:1.7;">※ 金利変動時に残債・残期間ベースで再計算するシンプルモデルです（5年ルール・125%ルールは非反映）。</p>
+  </div>
+
+  <div class="insight"><div class="inslbl">判断の視点</div><div class="instxt" id="ins-txt">—</div></div>
+
+  <!-- ── ライフプランシミュレーション ── -->
+  <div class="card" id="lp-card">
+    <div class="sl">ライフプランシミュレーション <span style="font-size:9px;font-weight:400;letter-spacing:.04em;color:var(--tx3);margin-left:6px;">年間キャッシュフローで黒字・赤字を可視化</span></div>
+
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:0;border:1px solid var(--bdl);border-radius:12px;overflow:hidden;">
+
+      <!-- ── 左：タブ入力パネル ── -->
+      <div style="background:#F8FAFC;border-right:1px solid var(--bdl);">
+        <!-- タブ -->
+        <div style="display:flex;border-bottom:1px solid var(--bdl);">
+          <button class="lp-tab active" onclick="lpSwitchTab('fam',this)" style="flex:1;">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="6.5" r="2.5"/><path d="M2 18C2 15 4 13 7 13C10 13 12 15 12 18"/><circle cx="14.5" cy="7.5" r="2"/><path d="M11.5 18C11.5 15.5 12.8 14 14.5 14C16.2 14 17.5 15.5 17.5 18"/></svg>
+            家族
+          </button>
+          <button class="lp-tab" onclick="lpSwitchTab('inc',this)" style="flex:1;">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M6 5V4a2 2 0 0 1 4 0v1"/><circle cx="10" cy="12" r="2"/></svg>
+            収入
+          </button>
+          <button class="lp-tab" onclick="lpSwitchTab('cost',this)" style="flex:1;">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h12v12H4z"/><path d="M8 4v12M4 8h12M4 12h12"/></svg>
+            費用
+          </button>
+        </div>
+
+        <!-- タブ1: 家族構成 -->
+        <div id="lp-tab-fam" class="lp-tab-pane" style="padding:14px;">
+          <p class="lp-inp-lbl">家族構成</p>
+          <div style="display:flex;gap:14px;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--tx);">
+              <input type="radio" name="lp-type" id="lp-single" onchange="lpToggle()" style="accent-color:var(--ac);"> 本人のみ
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--tx);">
+              <input type="radio" name="lp-type" id="lp-multi" checked onchange="lpToggle()" style="accent-color:var(--ac);"> 複数同居
+            </label>
+          </div>
+          <div id="lp-multi-panel" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+            <div class="lp-mrow" id="lp-row-h"><input type="checkbox" id="lp-cb-h" checked onchange="lpCb('h')" style="accent-color:var(--ac);width:13px;height:13px;flex-shrink:0;"><span class="lp-mlbl">夫</span><div class="lp-age-wrap"><input type="number" id="lp-age-h" value="35" min="20" max="80" placeholder="--" class="lp-age-inp" oninput="updateLifePlan()"><span class="lp-agt">歳</span></div></div>
+            <div class="lp-mrow" id="lp-row-w"><input type="checkbox" id="lp-cb-w" checked onchange="lpCb('w')" style="accent-color:var(--ac);width:13px;height:13px;flex-shrink:0;"><span class="lp-mlbl">妻</span><div class="lp-age-wrap"><input type="number" id="lp-age-w" value="33" min="20" max="80" placeholder="--" class="lp-age-inp" oninput="updateLifePlan()"><span class="lp-agt">歳</span></div></div>
+            <div class="lp-mrow" id="lp-row-c1"><input type="checkbox" id="lp-cb-c1" checked onchange="lpCb('c1')" style="accent-color:var(--ac);width:13px;height:13px;flex-shrink:0;"><span class="lp-mlbl">第1子</span><div class="lp-age-wrap"><input type="number" id="lp-age-c1" value="4" min="0" max="22" placeholder="--" class="lp-age-inp" oninput="updateLifePlan()"><span class="lp-agt">歳</span></div></div>
+            <div class="lp-mrow" id="lp-row-c2"><input type="checkbox" id="lp-cb-c2" checked onchange="lpCb('c2')" style="accent-color:var(--ac);width:13px;height:13px;flex-shrink:0;"><span class="lp-mlbl">第2子</span><div class="lp-age-wrap"><input type="number" id="lp-age-c2" value="1" min="0" max="22" placeholder="--" class="lp-age-inp" oninput="updateLifePlan()"><span class="lp-agt">歳</span></div></div>
+            <div class="lp-mrow lp-dim" id="lp-row-c3"><input type="checkbox" id="lp-cb-c3" onchange="lpCb('c3')" style="accent-color:var(--ac);width:13px;height:13px;flex-shrink:0;"><span class="lp-mlbl">第3子</span><div class="lp-age-wrap"><input type="number" id="lp-age-c3" min="0" max="22" placeholder="--" class="lp-age-inp" disabled oninput="updateLifePlan()"><span class="lp-agt">歳</span></div></div>
+            <div class="lp-mrow lp-dim" id="lp-row-c4"><input type="checkbox" id="lp-cb-c4" onchange="lpCb('c4')" style="accent-color:var(--ac);width:13px;height:13px;flex-shrink:0;"><span class="lp-mlbl">第4子</span><div class="lp-age-wrap"><input type="number" id="lp-age-c4" min="0" max="22" placeholder="--" class="lp-age-inp" disabled oninput="updateLifePlan()"><span class="lp-agt">歳</span></div></div>
+          </div>
+
+          <p class="lp-inp-lbl">引き渡し予定</p>
+          <select id="lp-delivery" onchange="updateLifePlan()" style="width:100%;font-size:12px;margin-bottom:14px;">
+            <option value="0">即時（今月）</option><option value="3">3ヶ月後</option><option value="6">6ヶ月後</option>
+            <option value="12" selected>1年後</option><option value="18">1年6ヶ月後</option>
+            <option value="24">2年後</option><option value="36">3年後</option>
+          </select>
+
+          <p class="lp-inp-lbl">変動金利シナリオ</p>
+          <div style="display:flex;gap:10px;">
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="radio" name="lp-scen" value="0" onchange="updateLifePlan()" style="accent-color:#0D9488;"><span style="color:#0D9488;font-weight:600;">楽観</span></label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="radio" name="lp-scen" value="1" checked onchange="updateLifePlan()" style="accent-color:#4F46E5;"><span style="color:#4F46E5;font-weight:600;">中立</span></label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="radio" name="lp-scen" value="2" onchange="updateLifePlan()" style="accent-color:#DC2626;"><span style="color:#DC2626;font-weight:600;">悲観</span></label>
+          </div>
+        </div>
+
+        <!-- タブ2: 収入・産育休 -->
+        <div id="lp-tab-inc" class="lp-tab-pane" style="padding:14px;display:none;">
+          <p class="lp-inp-lbl">世帯年収（額面）</p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+            <div class="lp-mrow" style="padding:7px 10px;">
+              <span class="lp-mlbl" id="lp-inc-h-lbl">夫</span>
+              <div class="lp-age-wrap" style="margin-left:auto;">
+                <input type="number" id="lp-inc-h" value="700" min="100" max="5000" step="50" class="lp-age-inp" style="width:70px;" oninput="updateLifePlan()">
+                <span class="lp-agt">万円/年</span>
+              </div>
+            </div>
+            <div class="lp-mrow" id="lp-inc-w-row" style="padding:7px 10px;">
+              <span class="lp-mlbl">妻</span>
+              <div class="lp-age-wrap" style="margin-left:auto;">
+                <input type="number" id="lp-inc-w" value="500" min="0" max="5000" step="50" class="lp-age-inp" style="width:70px;" oninput="updateLifePlan()">
+                <span class="lp-agt">万円/年</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="lp-inp-lbl">産育休・時短勤務（妻）</p>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;cursor:pointer;margin-bottom:10px;color:var(--tx);">
+            <input type="checkbox" id="lp-ml-on" onchange="lpToggleML()" style="accent-color:var(--ac);width:13px;height:13px;">
+            産育休・時短を考慮する
+          </label>
+          <div id="lp-ml-panel" style="display:none;background:#EFF6FF;border-radius:8px;padding:10px 12px;font-size:12px;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="min-width:52px;color:var(--tx2);font-weight:500;font-size:11px;">育休期間</span>
+                <input type="number" id="lp-ml-mo" value="12" min="1" max="24" class="lp-age-inp" style="width:44px;" oninput="updateLifePlan()">
+                <span class="lp-agt">ヶ月</span>
+              </div>
+              <p style="font-size:10px;color:var(--tx3);margin:-2px 0 2px 58px;">前半6ヶ月=67%、以降=50%給付</p>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="min-width:52px;color:var(--tx2);font-weight:500;font-size:11px;">時短勤務</span>
+                <input type="number" id="lp-st-yr" value="2" min="0" max="6" class="lp-age-inp" style="width:44px;" oninput="updateLifePlan()">
+                <span class="lp-agt">年間・収入</span>
+                <input type="number" id="lp-st-pct" value="80" min="40" max="100" class="lp-age-inp" style="width:44px;" oninput="updateLifePlan()">
+                <span class="lp-agt">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- タブ3: 費用設定 -->
+        <div id="lp-tab-cost" class="lp-tab-pane" style="padding:14px;display:none;">
+          <p class="lp-inp-lbl">教育費の無償化制度</p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;padding:10px 12px;background:#EFF6FF;border-radius:8px;">
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
+              <input type="radio" name="lp-sub" id="lp-sub-off" checked onchange="updateLifePlan()" style="accent-color:var(--ac);">
+              <span>考慮しない（実費ベース）</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
+              <input type="radio" name="lp-sub" id="lp-sub-on" onchange="updateLifePlan()" style="accent-color:var(--ac);">
+              <span style="color:#0D9488;font-weight:600;">考慮する（2026年・東京都基準）</span>
+            </label>
+            <p style="font-size:10px;color:var(--tx3);margin-left:18px;">幼稚園無償化・高校授業料補助等</p>
+          </div>
+
+          <p class="lp-inp-lbl">子どもの課外費用</p>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;cursor:pointer;margin-bottom:8px;color:var(--tx);">
+            <input type="checkbox" id="lp-extra-on" onchange="lpToggleExtra()" style="accent-color:var(--ac);width:13px;height:13px;">
+            課外費用を追加する
+          </label>
+          <div id="lp-extra-info" style="display:none;background:#F8FAFB;border-radius:8px;padding:8px 10px;margin-bottom:14px;">
+            <table style="width:100%;border-collapse:collapse;font-size:10px;">
+              <tr style="border-bottom:1px solid #E2E8F0;"><td style="padding:2px 3px;color:var(--tx2);">乳幼児 0-2歳</td><td style="color:var(--tx3);">保育料</td><td style="text-align:right;font-weight:500;">月4万</td></tr>
+              <tr style="border-bottom:1px solid #E2E8F0;"><td style="padding:2px 3px;color:var(--tx2);">幼稚園 3-5歳</td><td style="color:var(--tx3);">習い事等</td><td style="text-align:right;font-weight:500;">月2万</td></tr>
+              <tr style="border-bottom:1px solid #E2E8F0;"><td style="padding:2px 3px;color:var(--tx2);">小学校 6-11歳</td><td style="color:var(--tx3);">学童・習い事</td><td style="text-align:right;font-weight:500;">月4万</td></tr>
+              <tr style="border-bottom:1px solid #E2E8F0;"><td style="padding:2px 3px;color:var(--tx2);">中学校 12-14歳</td><td style="color:var(--tx3);">塾等</td><td style="text-align:right;font-weight:500;">月5万</td></tr>
+              <tr style="border-bottom:1px solid #E2E8F0;"><td style="padding:2px 3px;color:var(--tx2);">高校 15-17歳</td><td style="color:var(--tx3);">塾・活動費</td><td style="text-align:right;font-weight:500;">月4.5万</td></tr>
+              <tr><td style="padding:2px 3px;color:var(--tx2);">大学 18-21歳</td><td style="color:var(--tx3);">交通費等</td><td style="text-align:right;font-weight:500;">月2万</td></tr>
+            </table>
+          </div>
+
+          <p class="lp-inp-lbl">基本生活費（月額概算）</p>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" id="lp-living-mo" value="25" min="5" max="80" step="1" class="lp-age-inp" style="width:58px;" oninput="updateLifePlan()">
+            <span class="lp-agt">万円/月</span>
+          </div>
+          <p style="font-size:10px;color:var(--tx3);margin-top:5px;line-height:1.6;">食費・光熱費・通信費・保険等の概算</p>
+        </div>
+      </div>
+
+      <!-- ── 右：表示パネル ── -->
+      <div style="padding:18px 20px;min-width:0;">
+
+        <!-- 引き渡し時の状況 -->
+        <div id="lp-del-sum" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bdl);"></div>
+
+        <!-- 家計耐力メトリクス -->
+        <div id="lp-hh-metrics" style="display:none;margin-bottom:16px;"></div>
+
+        <!-- キャッシュフローチャート -->
+        <div id="lp-chart-wrap" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            <span style="font-family:var(--fr);font-size:12px;font-weight:700;color:var(--tx);">年間キャッシュフロー推移</span>
+            <div id="lp-legend" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+          </div>
+          <div class="chart-wrap" style="position:relative;height:300px;"><canvas id="lp-chart"></canvas></div>
+          <!-- 家族ガントチャート（メインチャート直下・X軸と整合） -->
+          <div id="lp-age-bar" style="overflow:hidden;margin-top:2px;"></div>
+          <!-- 収支差額バー -->
+          <div style="margin-top:4px;border-top:1px dashed #E2E8F0;padding-top:4px;">
+            <div style="font-size:10px;color:var(--tx3);font-family:var(--fr);font-weight:600;letter-spacing:.06em;margin-bottom:2px;">年間収支差額（手取り − 支出合計）</div>
+            <div style="position:relative;height:80px;"><canvas id="lp-net-chart"></canvas></div>
+          </div>
+          <!-- キャッシュフロー解説 -->
+          <div id="lp-cf-legend" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:10px;color:var(--tx3);">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(16,185,129,.25);border-radius:2px;display:inline-block;"></span>収入が上回る（黒字）</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(239,68,68,.20);border-radius:2px;display:inline-block;"></span>支出が超過（赤字）</span>
+          </div>
+          <div id="lp-peak" style="background:#F8FAFC;border:1px solid var(--bdl);border-radius:10px;padding:14px 18px;margin-top:14px;"></div>
+        </div>
+
+        <!-- イベント表 -->
+        <div id="lp-ev-wrap" style="display:none;margin-top:16px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px;">主な入学・進学イベントと費用目安</div>
+          <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:380px;">
+            <thead><tr style="background:#F8FAFC;">
+              <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--tx3);border-bottom:2px solid var(--bdl);">時期</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--tx3);border-bottom:2px solid var(--bdl);">西暦</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--tx3);border-bottom:2px solid var(--bdl);">メンバー</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--tx3);border-bottom:2px solid var(--bdl);">イベント</th>
+              <th style="padding:7px 10px;text-align:right;font-weight:600;color:var(--tx3);border-bottom:2px solid var(--bdl);">費用目安</th>
+            </tr></thead>
+            <tbody id="lp-ev-body"></tbody>
+          </table>
+          </div>
+        </div>
+
+        <p style="font-size:10px;color:var(--tx3);margin-top:14px;line-height:1.75;">※ 教育費は文部科学省「令和3年度子供の学習費調査」等を参考に東京都在住を想定した概算値。実際の費用は進路により大きく異なります。</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="ftin">※ 本シミュレーターは住宅購入・住み替え検討の参考情報提供を目的としています。変動型住宅ローンは5年ルール・125%ルールが適用されるため実際の返済額はシミュレーション結果と異なる場合があります。試算は特定の金融機関の商品・審査を保証するものではありません。資金計画・ローン選択についてはFPまたは金融機関へご相談ください。</div>
+</footer>
+
+</div><!-- /right-side -->
+</div><!-- /app-shell -->
+
+<!-- ── Report Modal ── -->
+<div id="rmodal" class="modal-ov" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div><h2>レポート出力設定</h2><p>顧客への説明資料としてPDFを作成します</p></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="modal-section-title">顧客・担当者情報</div>
+        <div class="form-row"><label>宛名（お客様名前）<span class="req">*</span></label><input type="text" id="r-name" placeholder="例：田中 様"></div>
+        <div class="form-row"><label>担当者名</label><input type="text" id="r-author" placeholder="PINTHOME 担当者名"></div>
+        <div class="form-row"><label>作成日</label><input type="date" id="r-date"></div>
+        <div class="form-row"><label>コメント・備考</label><textarea id="r-comment" placeholder="お客様へのメッセージや補足事項（レポート表紙に掲載）"></textarea></div>
+        <div class="form-row" style="margin-bottom:0;"><label>レポートタイトル</label><input type="text" id="r-title" value="住宅ローン 固定 vs 変動 比較レポート"></div>
+      </div>
+      <div>
+        <div class="modal-section-title">出力ページ設定</div>
+        <div class="cb-group">
+          <div class="cb-section">シミュレーション結果</div>
+          <label class="cb-item"><input type="checkbox" id="s-cond" checked><span>借入条件・月額比較</span></label>
+          <label class="cb-item"><input type="checkbox" id="s-scen" checked><span>シナリオ別サマリー</span></label>
+          <label class="cb-item"><input type="checkbox" id="s-chart" checked><span>シナリオ推移グラフ</span></label>
+          <label class="cb-item"><input type="checkbox" id="s-move" checked><span>住み替え分析</span></label>
+          <label class="cb-item"><input type="checkbox" id="s-sw" checked><span>変動→固定 切り替えシミュレーション</span></label>
+          <label class="cb-item"><input type="checkbox" id="s-ins" checked><span>判断の視点</span></label>
+          <div class="cb-section">解説コンテンツ</div>
+          <label class="cb-item"><input type="checkbox" id="e-mech"><span>固定・変動金利の仕組み</span></label>
+          <label class="cb-item"><input type="checkbox" id="e-env"><span>2026年の金利環境と見通し</span></label>
+          <label class="cb-item"><input type="checkbox" id="e-risk"><span>変動金利リスクの具体的なイメージ</span></label>
+          <label class="cb-item"><input type="checkbox" id="e-move"><span>住み替え前提のローン設計の考え方</span></label>
+          <label class="cb-item"><input type="checkbox" id="e-timing"><span>変動→固定 切り替えタイミングの見極め方</span></label>
+          <label class="cb-item"><input type="checkbox" id="e-gloss"><span>用語集</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-pdf" onclick="generateReport()">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M2 11h10" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>
+        プレビュー &amp; PDF出力
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Preview Overlay ── -->
+<div id="preview-ov">
+  <div class="preview-bar">
+    <span class="preview-bar-title" id="preview-title">レポートプレビュー</span>
+    <span class="pbar-hint">ブラウザの印刷ダイアログで「PDFに保存」を選択してください</span>
+    <button class="pbar-btn print" onclick="printReport()">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="2" y="5" width="10" height="7" rx="1.5" stroke="white" stroke-width="1.3"/><path d="M4 5V2.5C4 2.22 4.22 2 4.5 2H9.5C9.78 2 10 2.22 10 2.5V5" stroke="white" stroke-width="1.3"/><path d="M4 10H10" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>
+      印刷・PDFに保存
+    </button>
+    <button class="pbar-btn close" onclick="closePreview()">✕ 閉じる</button>
+  </div>
+  <iframe id="preview-frame" title="レポートプレビュー"></iframe>
+</div>
+
+<script>
+// ── Math ───────────────────────────────────────────────────────────────────
+const pmt=(P,ra,n)=>{if(!ra||n<=0)return P/Math.max(n,1);const r=ra/100/12;return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);};
+const simulate=(P,yrs,sched)=>{const n=yrs*12;const s=[...sched].sort((a,b)=>a.y-b.y);let bal=P,cp=0,ci=0;const out=[];for(let m=1;m<=n;m++){const yr=Math.floor((m-1)/12);let r=s[0].r;for(const x of s)if(yr>=x.y)r=x.r;const rem=n-m+1;const pay=pmt(bal,r,rem);const int=bal*r/100/12;bal=Math.max(0,bal-(pay-int));cp+=pay;ci+=int;if(m%12===0)out.push({yr:m/12,cp:Math.round(cp),ci:Math.round(ci),pay:Math.round(pay),bal:Math.round(bal)});}return{out,tP:Math.round(cp),tI:Math.round(ci)};};
+
+// 5年ルール・125%ルール対応シミュレーション
+const simulate5Y=(P,yrs,sched,use5Y,use125)=>{
+  if(!use5Y)return simulate(P,yrs,sched); // ルールなしは既存関数に委譲
+  const n=yrs*12;const s=[...sched].sort((a,b)=>a.y-b.y);
+  let bal=P,cp=0,ci=0;const out=[];
+  let curR=s[0].r;
+  let curPay=pmt(P,curR,n); // 初期返済額
+  let reviewPay=curPay;     // 直前の5年見直し時の返済額（125%比較用）
+  for(let m=1;m<=n;m++){
+    const yr=Math.floor((m-1)/12);
+    curR=s[0].r;for(const x of s)if(yr>=x.y)curR=x.r;
+    // 5年毎の見直し（61ヶ月目、121ヶ月目…）
+    if(m>1&&(m-1)%60===0){
+      const rem=n-m+1;
+      const newPay=pmt(Math.max(bal,1),curR,rem);
+      curPay=use125?Math.min(newPay,reviewPay*1.25):newPay;
+      reviewPay=curPay;
+    }
+    const int=Math.max(bal,0)*curR/100/12;
+    bal=bal-(curPay-int); // 利息>返済額のとき残高増（元本割れ）
+    if(bal<0)bal=0;
+    cp+=curPay;ci+=Math.max(int,0);
+    if(m%12===0)out.push({yr:m/12,cp:Math.round(cp),ci:Math.round(ci),pay:Math.round(curPay),bal:Math.round(bal)});
+  }
+  return{out,tP:Math.round(cp),tI:Math.round(ci)};
+};
+
+function toggle5Y(){
+  const on=document.getElementById('i-5yr').checked;
+  const lbl=document.getElementById('lbl-125');
+  const cb125=document.getElementById('i-125');
+  lbl.style.opacity=on?'1':'.35';
+  lbl.style.pointerEvents=on?'auto':'none';
+  cb125.disabled=!on;
+  if(!on)cb125.checked=false;
+  update();
+}
+
+// 切り替え時の推計固定金利：変動上昇分の約60%を長期金利転嫁として加算
+function estimateSwFixed(SwY, V, F){
+  const midSched=mkS(V)[1];
+  const rateAtSwY=midSched.reduce((acc,s)=>SwY>=s.y?s.r:acc,V);
+  const varUp=Math.max(0,rateAtSwY-V);
+  return Math.round((F+varUp*0.6)*100)/100;
+}
+
+let swrManual=false; // ユーザーが手動で上書きしたかどうか
+function resetSwR(){swrManual=false;update();}
+
+// 全切り替え年の試算（最適タイミング分析用）
+function calcAllSwitch(A,T,F,V,use5Y,use125){
+  const fS=simulate(A,T,[{y:0,r:F}]);
+  const scenResults=mkS(V).map(sched=>{
+    const vS=simulate5Y(A,T,sched,use5Y,use125);
+    const byYear=[];
+    for(let swY=1;swY<=Math.min(T-1,20);swY++){
+      const estF=estimateSwFixed(swY,V,F);
+      const swSch=mkSwSch(V,swY,estF);
+      const swS=simulate5Y(A,T,swSch,use5Y,use125);
+      byYear.push({swY,estF,tI:swS.tI,vsVar:swS.tI-vS.tI,vsFixed:swS.tI-fS.tI});
+    }
+    const optimal=byYear.reduce((b,r)=>r.tI<b.tI?r:b,byYear[0]);
+    const firstBetter=byYear.find(r=>r.vsVar<0);
+    return{vS,fS,byYear,optimal,firstBetter};
+  });
+  return scenResults;
+}
+const man=v=>Math.round(v/10000).toLocaleString('ja-JP')+'万円';
+const mam=v=>(Math.round(v/1000)/10).toFixed(1)+'万円';
+const pp=v=>(+v).toFixed(2)+'%';
+const mkS=V=>[[{y:0,r:V},{y:2,r:Math.max(V,1.0)}],[{y:0,r:V},{y:2,r:Math.max(V,1.25)},{y:5,r:Math.max(V,1.5)},{y:10,r:Math.max(V,1.75)}],[{y:0,r:V},{y:2,r:Math.max(V,1.5)},{y:4,r:Math.max(V,2.5)},{y:7,r:Math.max(V,3.0)}]];
+const mkD=V=>[`現在 ${pp(V)} → 2年後 ${pp(Math.max(V,1.0))} で正常化完了・以降据え置き`,`現在 ${pp(V)} → 2年後 ${pp(Math.max(V,1.25))} → 5年後 ${pp(Math.max(V,1.5))} → 10年後 ${pp(Math.max(V,1.75))}（市場コンセンサス）`,`現在 ${pp(V)} → 2年後 ${pp(Math.max(V,1.5))} → 4年後 ${pp(Math.max(V,2.5))} → 7年後以降 ${pp(Math.max(V,3.0))}（円安・インフレ加速）`];
+const mkSwSch=(V,swY,swR)=>{const neu=mkS(V)[1];return[...neu.filter(s=>s.y<swY),{y:swY,r:swR}];};
+const findBE=(f,v)=>{for(let i=0;i<f.length;i++)if((v[i]?.cp??0)>(f[i]?.cp??0))return f[i].yr;return null;};
+
+let ctab='interest',chart=null,RD={};
+
+Chart.register({id:'mvLine',afterDraw(ch){const mv=+document.getElementById('i-mv').value||0;if(mv<=0)return;const{ctx,scales:{x,y},data}=ch;const idx=data.labels.indexOf(mv+'年');if(idx<0)return;const px=x.getPixelForValue(idx);ctx.save();ctx.setLineDash([5,3]);ctx.strokeStyle='rgba(122,79,43,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(px,y.top);ctx.lineTo(px,y.bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(122,79,43,.7)';ctx.font="10px 'Noto Sans JP',sans-serif";ctx.textAlign='center';ctx.fillText('住み替え',px,y.top+12);ctx.restore();}});
+
+function update(){
+  const A=(+document.getElementById('i-amt').value||4000)*10000;
+  const T=+document.getElementById('i-term').value||35;
+  const F=+document.getElementById('i-fix').value||2.5;
+  const V=+document.getElementById('i-var').value||0.8;
+  const MV=Math.min(+document.getElementById('i-mv').value||10,T);
+  const SwY=Math.min(+document.getElementById('i-sw-yr').value||5,T-1);
+  // 推計固定金利（手動上書きがなければ自動設定）
+  const estSwR=estimateSwFixed(SwY,V,F);
+  if(!swrManual){
+    document.getElementById('i-sw-r').value=estSwR;
+  }
+  const SwR=+document.getElementById('i-sw-r').value||F;
+  // 推計表示更新
+  const midRateAtSw=mkS(V)[1].reduce((acc,s)=>SwY>=s.y?s.r:acc,V);
+  const varUp=Math.max(0,midRateAtSw-V);
+  document.getElementById('sw-est-disp').textContent=pp(estSwR);
+  document.getElementById('sw-est-note').innerHTML=
+    `<span style="color:var(--c2);">変動（中立）</span>: ${pp(V)} → <strong>${pp(midRateAtSw)}</strong>（+${pp(varUp)}）<br>`+
+    `長期金利への転嫁推計: +${pp(varUp)}×0.6 = <strong>+${pp(Math.round(varUp*0.6*100)/100)}</strong><br>`+
+    `固定推計: ${pp(F)} + ${pp(Math.round(varUp*0.6*100)/100)} = <strong style="color:var(--ac);">${pp(estSwR)}</strong>`+
+    (swrManual?`<br><span style="color:var(--c3);">手動調整中: ${pp(SwR)}</span>`:'');
+  document.getElementById('d-amt').textContent=(+document.getElementById('i-amt').value||4000).toLocaleString()+'万円';
+  document.getElementById('d-fix').textContent=pp(F);document.getElementById('d-var').textContent=pp(V);
+  const fS=simulate(A,T,[{y:0,r:F}]);
+  const use5Y=document.getElementById('i-5yr').checked;
+  const use125=use5Y&&document.getElementById('i-125').checked;
+  const vS=mkS(V).map(sc=>simulate5Y(A,T,sc,use5Y,use125));
+  const swS=simulate5Y(A,T,mkSwSch(V,SwY,SwR),use5Y,use125);
+  // ルール状態表示
+  const ruleNote=document.getElementById('rule-status');
+  const ruleTxt=document.getElementById('rule-note-txt');
+  if(!use5Y){
+    ruleNote.textContent='ルールなし：金利変動のたびに返済額を再計算（簡易モデル）';
+    if(ruleTxt)ruleTxt.textContent='※ 金利変動時に残債・残期間ベースで再計算するシンプルモデルです（5年ルール・125%ルールは非反映）。';
+  } else if(!use125){
+    ruleNote.textContent='5年ルール適用：返済額は5年毎に見直し（5年間は金利が変わっても返済額は固定）';
+    if(ruleTxt)ruleTxt.textContent='※ 5年ルール適用：金利が変動しても5年間は返済額を固定し、5年毎に残債・金利・残期間で再計算するモデルです。';
+  } else {
+    ruleNote.textContent='5年ルール＋125%ルール適用：5年毎に見直し、増額は前回返済額の125%以内に制限（実際の変動型ローンに近いモデル）';
+    if(ruleTxt)ruleTxt.textContent='※ 5年ルール＋125%ルール適用：5年毎に見直し、増額は前回比125%以内に制限。金利急騰時は元本が増加するリスクあり。';
+  }
+  const fp=pmt(A,F,T*12),vp=pmt(A,V,T*12),dd=fp-vp;
+  document.getElementById('m-fp').textContent=mam(fp)+'/月';
+  document.getElementById('m-vp').textContent=mam(vp)+'/月';
+  document.getElementById('m-dp').textContent=(dd>=0?'+':'')+mam(dd);
+  document.getElementById('m-dpn').textContent=dd>=0?'固定の方が高い（現時点）':'変動の方が高い（現時点）';
+  document.getElementById('ctx-bar').innerHTML=`<strong>現在の金利環境（2026年4月）：</strong>政策金利 0.75%（2025年12月利上げ）。エコノミスト88%が2026年7月までの追加利上げを予想（Bloomberg）。ターミナルレートのコンセンサスは <strong>1.25〜1.75%</strong>。固定・変動の現在の差は <strong>${pp(F-V)}</strong>。楽観シナリオでも変動金利の上昇は不可避な局面です。`;
+  const descs=mkD(V);const beY=vS.map(vs=>findBE(fS.out,vs.out));
+  for(let i=0;i<3;i++){const n=i+1,vs=vS[i],df=vs.tI-fS.tI;document.getElementById('sd'+n).textContent=descs[i];document.getElementById('si'+n).textContent=man(vs.tI);const ce=document.getElementById('sc'+n);ce.textContent=(df<0?'▼':'▲')+man(Math.abs(df));ce.style.color=df<0?'#0C8080':'#941010';const be=document.getElementById('sb'+n);be.textContent=beY[i]?beY[i]+'年目〜':'逆転なし';be.style.color=beY[i]?'#4A6FA8':'#0C8080';}
+  document.getElementById('mv-yr').textContent=`（借入から${MV}年後の状況）`;
+  const mvi=MV-1;const allSims=[fS,...vS];const keys=['f','1','2','3'];
+  allSims.forEach((s,i)=>{const d=s.out[mvi];if(!d)return;document.getElementById('mvb-'+keys[i]).textContent=man(d.bal);document.getElementById('mvi-'+keys[i]).textContent=man(d.ci);document.getElementById('mvm-'+keys[i]).textContent=mam(d.ci/MV/12);});
+  const fBal=fS.out[mvi]?.bal??0,s3Bal=vS[2].out[mvi]?.bal??0,bDiff=s3Bal-fBal;
+  document.getElementById('mv-note').innerHTML=`残債は「売却価格がこれ以上あれば次購入の資金に充当できる」目安です。`+(Math.abs(bDiff)>50000?`悲観シナリオでは${MV}年時点の残債が固定より <strong>約${man(Math.abs(bDiff))}${bDiff>0?'多く':'少なく'}</strong> なります。`:`シナリオ間で${MV}年時点の残債に大きな差は生じていません。`)+` 月あたり利息コストを周辺の賃料相場と比べることで「所有コスト感覚」の整理に使えます。`;
+  const swDf=swS.tI-fS.tI,swDn=swS.tI-vS[1].tI;
+  document.getElementById('sw-tot').textContent=man(swS.tI);
+  const swfEl=document.getElementById('sw-vf');swfEl.textContent=(swDf<0?'▼':'▲')+man(Math.abs(swDf));swfEl.style.color=swDf<0?'#0C8080':'#941010';
+  const swnEl=document.getElementById('sw-vn');swnEl.textContent=(swDn<0?'▼':'▲')+man(Math.abs(swDn));swnEl.style.color=swDn<0?'#0C8080':'#941010';
+  const gap=F-V;const rateAtSw=mkS(V)[1].reduce((acc,s)=>SwY>=s.y?s.r:acc,V);
+  let guide=gap<0.4?`現在の固定・変動の差は <strong>${pp(gap)}</strong> と小さく、変動スタートのメリットは限られます。`:gap>=1.0?`現在の差は <strong>${pp(gap)}</strong> と大きく、変動スタートのコストメリットが出やすい局面です。`:`現在の差は <strong>${pp(gap)}</strong> で、変動スタートには一定のメリットがあります。`;
+  guide+=` 切り替え時（${SwY}年後）の変動金利は中立ペースで <strong>${pp(rateAtSw)}</strong> 程度になる見通しです。`;
+  guide+=SwY<=2?` 早期切り替えは最初から固定を選ぶ場合に近くなります。`:SwY<=8?` 金利上昇が本格化する前に切り替えることで、リスク低減と変動メリットの両取りをねらうプランです。`:` 長期にわたり変動リスクを取り続けた後の切り替えです。金利急騰リスクに注意が必要です。`;
+  guide+=`<br>切り替えサイン：①日銀の継続的利上げ ②固定・変動差が0.5%以内 ③残期間10年以上 ④家計の大きな変化`;
+  document.getElementById('sw-guide').innerHTML=guide;
+  const lines=[];
+  lines.push(`現在の金利環境では楽観シナリオ（据え置き）は現実的でなく、最低でも変動 <strong>${pp(Math.max(V,1.0))}</strong> 程度への上昇は前提として置く必要があります。`);
+  lines.push(beY[1]?`市場コンセンサスの中立シナリオでは <strong>${beY[1]}年目</strong> から固定が累積コストで有利になります。住み替え想定 <strong>${MV}年後</strong> がこの逆転の前か後かが分岐点です。`:`中立シナリオでも変動が全期間にわたりコスト面で有利です。`);
+  if(beY[2])lines.push(`悲観シナリオでは <strong>${beY[2]}年目</strong> に逆転し、最終的に変動のほうが約 <strong>${man(vS[2].tI-fS.tI)}</strong> 割高になります。`);
+  lines.push(`切り替えシミュレーション（${SwY}年後・${pp(SwR)}固定）は中立変動より${swDn<0?'▼'+man(Math.abs(swDn))+' 安く':'▲'+man(swDn)+' 高く'}なります。`);
+  lines.push(`「何年後まで変動でいられるか」「住み替え時の残債許容度」「月返済増加の耐性」の3軸が判断軸です。`);
+  document.getElementById('ins-txt').innerHTML=lines.join('<br>');
+  renderChart(fS,vS,swS);
+  RD={A,T,F,V,MV,SwY,SwR,fp,vp,dd,fS,vS,swS,descs,beY,allSims,keys,mvi};
+  updateLifePlan();
+
+  // ── 最適切り替えタイミング分析 ──
+  const swOpt=calcAllSwitch(A,T,F,V,use5Y,use125);
+  const scenNames2=['楽観','中立','悲観'];
+  const scenColors2=['#0C6E6A','#4A6FA8','#8C1A30'];
+  const sigColor=(v)=>v<0?'#0C6E6A':v===0?'#AE9880':'#8C1A30';
+
+  let html=`<div style="font-family:var(--fr);font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--tx3);margin-bottom:14px;">最適切り替えタイミングの見解</div>`;
+
+  // シナリオ別分析
+  html+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">`;
+  swOpt.forEach((res,si)=>{
+    const{optimal,firstBetter,vS:vs}=res;
+    const scLabel=scenNames2[si];
+    const scColor=['#0C6E6A','#4A6FA8','#8C1A30'][si];
+    let verdict,note;
+    if(!firstBetter||optimal.vsVar>=0){
+      verdict='変動保有が優位';
+      note=`切り替え後の固定金利（推計${pp(estimateSwFixed(optimal.swY,V,F))}前後）が高く、変動継続の方が総コストで有利な試算`;
+    } else {
+      const best=optimal;
+      verdict=`${best.swY}年目前後が最安`;
+      note=`推計固定 <strong>${pp(best.estF)}</strong>　変動継続より <strong style="color:#0C6E6A;">▼${man(Math.abs(best.vsVar))}</strong> 安い試算`;
+    }
+    html+=`<div style="background:#EDF4FB;border-radius:12px;padding:14px 16px;border-top:3px solid ${scColor};">
+      <div style="font-family:var(--fr);font-size:10px;font-weight:700;color:${scColor};margin-bottom:6px;letter-spacing:.04em;">${scLabel}シナリオ</div>
+      <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:6px;">${verdict}</div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.75;">${note}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  // 総合判断
+  const thresholdR=Math.round((F-0.5)*100)/100; // 変動がこの水準を超えたら要検討
+  const allGood=swOpt.every(r=>!r.firstBetter||r.optimal.vsVar>=0);
+  const mid=swOpt[1];
+  const pess=swOpt[2];
+  const midBetter=mid.firstBetter&&mid.optimal.vsVar<0;
+  const pessBetter=pess.firstBetter&&pess.optimal.vsVar<0;
+
+  html+=`<div style="background:#E8F0FA;border-left:4px solid var(--ac);border-radius:0 12px 12px 0;padding:14px 18px;font-size:12px;color:var(--tx);line-height:2;">`;
+  html+=`<div style="font-family:var(--fr);font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--ac);margin-bottom:8px;">切り替えを検討するシグナル</div>`;
+  html+=`① 変動金利が <strong>${pp(thresholdR)}</strong> を超えてきた（現在の固定金利 ${pp(F)} から0.5%以内）<br>`;
+  html+=`② 日銀が複数回の連続利上げを明言し始めた<br>`;
+  html+=`③ 10年国債利回りが急上昇し始めた（固定金利上昇の先行指標）<br>`;
+  html+=`④ 残期間が<strong>10年以上</strong>ある（切り替えコストを回収できる期間）<br>`;
+  if(allGood){
+    html+=`<br><strong>現在の金利設定では、いずれのシナリオでも固定への切り替えより変動継続の方がコスト面で有利な試算です。</strong>変動金利が${pp(thresholdR)}を超えてきたら再度検討を。`;
+  } else if(midBetter&&pessBetter){
+    html+=`<br><strong>中立・悲観シナリオ双方で切り替えにメリットが出る設定です。</strong>特に${mid.optimal.swY}年目前後が費用対効果のピーク。それ以降に遅らせると推計固定金利も上昇するため、「変動が上がり始めてから切り替えよう」では遅くなる可能性があります。`;
+  } else if(pessBetter){
+    html+=`<br><strong>悲観シナリオのみ切り替えメリットが出ます。</strong>中立程度の上昇であれば変動継続が有利。悲観（急騰）局面になった場合に${pess.optimal.swY}年目前後での切り替えを検討。ただしその時点では固定金利も${pp(pess.optimal.estF)}程度まで上昇している可能性があります。`;
+  }
+  html+=`</div>`;
+
+  document.getElementById('sw-optimal').innerHTML=html;
+}
+
+function renderChart(fS,vS,swS){
+  const xl=fS.out.map(d=>d.yr+'年');const yu=ctab==='monthly'?'万円/月':'万円';
+  const gd=(s,t)=>s.out.map(d=>t==='interest'?Math.round(d.ci/10000):t==='monthly'?parseFloat((d.pay/10000).toFixed(1)):Math.round(d.cp/10000));
+  const ds=[{label:'固定',data:gd(fS,ctab),borderColor:'#003F87',borderWidth:3.5,pointRadius:0,tension:0,backgroundColor:'transparent'},{label:'楽観変動',data:gd(vS[0],ctab),borderColor:'#0C8080',borderWidth:2.5,pointRadius:0,tension:0,backgroundColor:'transparent',borderDash:[10,5]},{label:'中立変動',data:gd(vS[1],ctab),borderColor:'#4A6FA8',borderWidth:2.5,pointRadius:0,tension:0,backgroundColor:'transparent',borderDash:[4,4]},{label:'悲観変動',data:gd(vS[2],ctab),borderColor:'#8C1A30',borderWidth:2.5,pointRadius:0,tension:0,backgroundColor:'transparent'},{label:'切り替え案',data:gd(swS,ctab),borderColor:'#52259A',borderWidth:2,pointRadius:0,tension:0,backgroundColor:'transparent',borderDash:[7,3,2,3]}];
+  if(chart){chart.destroy();chart=null;}
+  chart=new Chart(document.getElementById('mc'),{type:'line',data:{labels:xl,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,18,40,.92)',padding:12,cornerRadius:8,titleFont:{family:"'Noto Sans JP',sans-serif",size:12},bodyFont:{family:"'Noto Sans JP',sans-serif",size:12},callbacks:{title:i=>i[0].label+' 経過時点',label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString('ja-JP')} ${yu}`}}},scales:{x:{grid:{color:'rgba(180,160,140,.12)'},ticks:{font:{family:"'Noto Sans JP',sans-serif",size:11},maxTicksLimit:10,color:'#8AA8C8'}},y:{grid:{color:'rgba(180,160,140,.12)'},ticks:{font:{family:"'Noto Sans JP',sans-serif",size:11},color:'#8AA8C8',callback:v=>v.toLocaleString('ja-JP')+'万'}}}}});
+}
+
+function swTab(btn){document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');ctab=btn.dataset.k;update();}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+function openModal(){
+  const t=new Date();document.getElementById('r-date').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  document.getElementById('rmodal').classList.add('open');
+}
+function closeModal(){document.getElementById('rmodal').classList.remove('open');}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+function printReport(){
+  const fr=document.getElementById('preview-frame');
+  if(fr.contentWindow)fr.contentWindow.print();
+}
+function closePreview(){
+  document.getElementById('preview-ov').classList.remove('open');
+  document.getElementById('preview-frame').srcdoc='';
+}
+
+// ── Report Generation ─────────────────────────────────────────────────────────
+function generateReport(){
+  const name=document.getElementById('r-name').value.trim();
+  if(!name){alert('宛名を入力してください。');return;}
+  closeModal();
+  const chartImg=document.getElementById('mc').toDataURL('image/png');
+  const cfg={
+    name,
+    author:document.getElementById('r-author').value.trim(),
+    date:document.getElementById('r-date').value,
+    comment:document.getElementById('r-comment').value.trim(),
+    title:document.getElementById('r-title').value.trim()||'住宅ローン 固定 vs 変動 比較レポート',
+    s:{cond:document.getElementById('s-cond').checked,scen:document.getElementById('s-scen').checked,chart:document.getElementById('s-chart').checked,move:document.getElementById('s-move').checked,sw:document.getElementById('s-sw').checked,ins:document.getElementById('s-ins').checked,mech:document.getElementById('e-mech').checked,env:document.getElementById('e-env').checked,risk:document.getElementById('e-risk').checked,mvplan:document.getElementById('e-move').checked,timing:document.getElementById('e-timing').checked,gloss:document.getElementById('e-gloss').checked}
+  };
+  const html=buildReportHTML(cfg,RD,chartImg);
+  const frame=document.getElementById('preview-frame');
+  frame.srcdoc=html;
+  document.getElementById('preview-title').textContent=`${cfg.name} 様 ／ ${cfg.title}`;
+  document.getElementById('preview-ov').classList.add('open');
+}
+
+function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return`${y}年${+m}月${+d}日`;}
+
+function buildReportHTML(cfg,rd,chartImg){
+  const{A,T,F,V,MV,SwY,SwR,fp,vp,dd,fS,vS,swS,descs,beY,allSims,keys,mvi}=rd;
+  const amtMan=Math.round(A/10000).toLocaleString('ja-JP');
+  const swDf=swS.tI-fS.tI,swDn=swS.tI-vS[1].tI;
+  const scColors=['#0C8080','#4A6FA8','#941010'];
+  const scNames=['楽観シナリオ','中立シナリオ','悲観シナリオ'];
+  const beLabels=beY.map(b=>b?b+'年目〜':'逆転なし');
+  const mvVals=fn=>allSims.map(s=>{const d=s.out[mvi];return d?fn(d):'—';});
+  const tRow=(label,vals)=>`<tr style="border-bottom:1px solid #C8D8EE;"><td style="padding:9px 12px;font-size:11px;color:#8A6A50;font-weight:500;">${label}</td>${vals.map(v=>`<td style="padding:9px 12px;font-size:12px;text-align:right;">${v}</td>`).join('')}</tr>`;
+  const HR=color=>`<div style="height:2px;background:${color};border-radius:1px;margin-bottom:14px;"></div>`;
+
+  const hdr=(n,tot)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #A8C0D8;margin-bottom:20px;"><span style="font-family:'Noto Serif JP',Georgia,serif;font-size:11px;font-weight:600;color:#1B3A5C;letter-spacing:.18em;">PINTHOME</span><span style="font-size:10px;color:#8AA8C8;">${cfg.title}</span><span style="font-size:10px;color:#8AA8C8;">${n}/${tot}</span></div>`;
+
+  // count pages
+  const s=cfg.s;let tot=1;
+  if(s.cond||s.scen)tot++;if(s.chart)tot++;if(s.move)tot++;if(s.sw)tot++;if(s.ins)tot++;
+  if(s.mech)tot++;if(s.env)tot++;if(s.risk)tot++;if(s.mvplan)tot++;if(s.timing)tot++;if(s.gloss)tot++;
+
+  let pages=[],pg=1;
+
+  // ── 表紙 ──
+  pages.push(`
+<div style="min-height:178mm;display:flex;flex-direction:column;">
+  <div style="background:linear-gradient(150deg,#0A2047 0%,#003F87 55%,#0D4A28 100%);padding:40px 48px;flex:1;display:flex;flex-direction:column;justify-content:space-between;min-height:110mm;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <span style="font-family:'Noto Serif JP',Georgia,serif;font-size:18px;font-weight:600;color:rgba(255,255,255,.95);letter-spacing:.22em;">PINTHOME</span>
+      <span style="font-size:11px;color:rgba(255,255,255,.6);">${fmtDate(cfg.date)}</span>
+    </div>
+    <div>
+      <p style="font-size:13px;color:rgba(255,255,255,.65);letter-spacing:.08em;margin-bottom:16px;">${cfg.name} 様</p>
+      <h1 style="font-family:'Noto Serif JP',Georgia,serif;font-size:26px;font-weight:600;color:white;line-height:1.5;letter-spacing:.04em;margin-bottom:24px;">${cfg.title}</h1>
+      <div style="display:flex;gap:36px;padding-top:22px;border-top:1px solid rgba(255,255,255,.2);">
+        <div><p style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:5px;">借入額</p><p style="font-size:18px;font-weight:400;color:white;">${amtMan}万円</p></div>
+        <div><p style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:5px;">借入期間</p><p style="font-size:18px;font-weight:400;color:white;">${T}年</p></div>
+        <div><p style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:5px;">固定金利</p><p style="font-size:18px;font-weight:400;color:white;">${pp(F)}</p></div>
+        <div><p style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:5px;">変動金利（現在）</p><p style="font-size:18px;font-weight:400;color:white;">${pp(V)}</p></div>
+      </div>
+    </div>
+  </div>
+  ${cfg.comment?`<div style="padding:14px 48px;background:#EBF4FF;border-top:3px solid #1B3A5C;"><p style="font-size:12px;color:#1A2E4A;line-height:2;font-style:italic;">${cfg.comment.replace(/\n/g,'<br>')}</p></div>`:'<div style="height:4px;background:#C8D8EE;"></div>'}
+  <div style="padding:12px 48px;display:flex;justify-content:space-between;align-items:center;background:white;">
+    <div><p style="font-size:10px;color:#8AA8C8;margin-bottom:2px;">担当</p><p style="font-size:12px;font-weight:500;color:#0C1A2E;">${cfg.author||'PINTHOME'}</p></div>
+    <p style="font-size:10px;color:#8AA8C8;">本資料は参考情報提供を目的としており、特定の金融商品の勧誘を目的とするものではありません。</p>
+  </div>
+</div>`);pg++;
+
+  // ── 借入条件・シナリオ ──
+  if(s.cond||s.scen){
+    let body='';
+    if(s.cond){body+=`
+<div style="margin-bottom:24px;">
+  <p style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#8AA8C8;margin-bottom:12px;">借入条件・月額比較</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
+    <div style="background:#EBF0FB;border-radius:10px;padding:14px 18px;"><p style="font-size:10px;color:#003F87;margin-bottom:5px;">固定 初月返済額</p><p style="font-size:22px;font-weight:300;color:#003F87;letter-spacing:-.02em;">${mam(fp)}<span style="font-size:12px;">/月</span></p></div>
+    <div style="background:#EBF5E8;border-radius:10px;padding:14px 18px;"><p style="font-size:10px;color:#226B18;margin-bottom:5px;">変動 初月返済額（現在）</p><p style="font-size:22px;font-weight:300;color:#226B18;letter-spacing:-.02em;">${mam(vp)}<span style="font-size:12px;">/月</span></p></div>
+    <div style="background:#F7F3EE;border-radius:10px;padding:14px 18px;"><p style="font-size:10px;color:#8A6A50;margin-bottom:5px;">月額差（固定 − 変動）</p><p style="font-size:22px;font-weight:300;color:#0C1A2E;letter-spacing:-.02em;">${(dd>=0?'+':'')+mam(dd)}</p><p style="font-size:10px;color:#8AA8C8;margin-top:3px;">${dd>=0?'固定の方が高い':'変動の方が高い'}</p></div>
+  </div>
+  <div style="background:#EBF4FF;border:1px solid rgba(140,185,255,.40);border-radius:8px;padding:10px 14px;font-size:11px;color:#1B3A5C;line-height:1.85;"><strong>現在の金利環境（2026年4月）：</strong>政策金利 0.75%。88%のエコノミストが2026年7月までの追加利上げを予想（Bloomberg調査）。ターミナルレートのコンセンサスは <strong>1.25〜1.75%</strong>。</div>
+</div>`;}
+    if(s.scen){body+=`
+<div>
+  <p style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#8AA8C8;margin-bottom:12px;">シナリオ別サマリー</p>
+  <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;">
+    <thead><tr style="background:#F7F3EE;"><th style="padding:9px 12px;text-align:left;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">シナリオ</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">金利推移</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">総利息</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">固定との差</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">逆転時期</th></tr></thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #C8D8EE;background:#EBF0FB;"><td style="padding:9px 12px;font-weight:500;color:#003F87;">固定（基準）</td><td style="padding:9px 12px;text-align:right;font-size:11px;color:#1A2E4A;">終始 ${pp(F)}</td><td style="padding:9px 12px;text-align:right;color:#003F87;">${man(fS.tI)}</td><td style="padding:9px 12px;text-align:right;color:#8A6A50;">—</td><td style="padding:9px 12px;text-align:right;color:#8A6A50;">—</td></tr>
+      ${vS.map((vs,i)=>{const df=vs.tI-fS.tI;return`<tr style="border-bottom:1px solid #C8D8EE;"><td style="padding:9px 12px;font-weight:500;color:${scColors[i]};">${scNames[i]}</td><td style="padding:9px 12px;text-align:right;font-size:10px;color:#1A2E4A;">${descs[i]}</td><td style="padding:9px 12px;text-align:right;">${man(vs.tI)}</td><td style="padding:9px 12px;text-align:right;font-weight:500;color:${df<0?'#0C8080':'#941010'};">${(df<0?'▼':'▲')+man(Math.abs(df))}</td><td style="padding:9px 12px;text-align:right;font-weight:500;color:${beY[i]?'#4A6FA8':'#0C8080'};">${beLabels[i]}</td></tr>`;}).join('')}
+    </tbody>
+  </table>
+  <div style="background:#F7F3EE;border-radius:8px;padding:10px 14px;font-size:11px;color:#1A2E4A;line-height:1.8;">逆転時期とは「変動の累積総支払が固定を上回った年」です。それ以降は固定が累積コストで有利になります。</div>
+</div>`;}
+    pages.push(hdr(pg,tot)+body);pg++;
+  }
+
+  // ── グラフ ──
+  if(s.chart){
+    pages.push(`${hdr(pg,tot)}
+<p style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#8AA8C8;margin-bottom:12px;">シナリオ別推移グラフ（累積利息）</p>
+<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
+  <span style="font-size:11px;color:#1A2E4A;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:22px;height:3.5px;background:#003F87;border-radius:2px;"></span>固定</span>
+  <span style="font-size:11px;color:#1A2E4A;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:22px;height:2px;background:repeating-linear-gradient(to right,#226B18 0,#226B18 7px,transparent 7px,transparent 12px);"></span>楽観変動</span>
+  <span style="font-size:11px;color:#1A2E4A;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:22px;height:2px;background:repeating-linear-gradient(to right,#A85C00 0,#A85C00 4px,transparent 4px,transparent 8px);"></span>中立変動</span>
+  <span style="font-size:11px;color:#1A2E4A;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:22px;height:2.5px;background:#941010;border-radius:1px;"></span>悲観変動</span>
+  <span style="font-size:11px;color:#1A2E4A;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:22px;height:2px;background:#52259A;border-radius:1px;"></span>切り替え案</span>
+</div>
+<img src="${chartImg}" style="width:100%;border-radius:8px;border:1px solid #C8D8EE;" alt="推移グラフ">
+<p style="font-size:10px;color:#8AA8C8;margin-top:8px;text-align:center;">※ 金利変動時に残債・残期間ベースで再計算するシンプルモデルです（5年ルール・125%ルールは非反映）。</p>`);pg++;
+  }
+
+  // ── 住み替え ──
+  if(s.move){
+    pages.push(`${hdr(pg,tot)}
+<p style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#8AA8C8;margin-bottom:4px;">住み替え分析</p>
+<p style="font-size:12px;color:#8A6A50;margin-bottom:16px;">借入から <strong>${MV}年後</strong> の状況（シナリオ別）</p>
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;">
+  <thead><tr style="background:#F7F3EE;"><th style="padding:9px 12px;text-align:left;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">項目</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#003F87;border-bottom:2px solid #A8C0D8;">固定</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#226B18;border-bottom:2px solid #A8C0D8;">楽観変動</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#A85C00;border-bottom:2px solid #A8C0D8;">中立変動</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#941010;border-bottom:2px solid #A8C0D8;">悲観変動</th></tr></thead>
+  <tbody>${tRow('残債（この金額以上の売却が必要）',mvVals(d=>man(d.bal)))}${tRow('それまでの利息累計',mvVals(d=>man(d.ci)))}${tRow('月あたり利息コスト',mvVals(d=>mam(d.ci/MV/12)))}</tbody>
+</table>
+<div style="background:#EBF4FF;border-radius:8px;padding:12px 16px;font-size:11px;color:#1B3A5C;line-height:1.9;">残債は「売却価格がこれ以上あれば次購入の資金に充当できる」目安です。月あたり利息コストは「住居費の実質コスト」として周辺の賃料相場との比較に活用できます。</div>`);pg++;
+  }
+
+  // ── 切り替え ──
+  if(s.sw){
+    const sc=swDf<0?'#0C8080':'#941010',sn=swDn<0?'#0C8080':'#941010';
+    pages.push(`${hdr(pg,tot)}
+<p style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#8AA8C8;margin-bottom:14px;">変動 → 固定 切り替えシミュレーション（中立シナリオベース・${SwY}年後に${pp(SwR)}固定へ切り替え）</p>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">
+  <div style="background:#F3EFF8;border-radius:10px;padding:14px 18px;"><p style="font-size:10px;color:#52259A;margin-bottom:5px;">切り替え案 総利息</p><p style="font-size:20px;font-weight:300;color:#52259A;">${man(swS.tI)}</p></div>
+  <div style="background:#F7F3EE;border-radius:10px;padding:14px 18px;"><p style="font-size:10px;color:#8A6A50;margin-bottom:5px;">固定との差</p><p style="font-size:20px;font-weight:300;color:${sc};">${(swDf<0?'▼':'▲')+man(Math.abs(swDf))}</p></div>
+  <div style="background:#F7F3EE;border-radius:10px;padding:14px 18px;"><p style="font-size:10px;color:#8A6A50;margin-bottom:5px;">中立変動との差</p><p style="font-size:20px;font-weight:300;color:${sn};">${(swDn<0?'▼':'▲')+man(Math.abs(swDn))}</p></div>
+</div>
+<div style="background:#F7F3EE;border-radius:8px;padding:14px 16px;font-size:12px;color:#1A2E4A;line-height:1.9;"><strong>切り替えを検討するサイン：</strong>①日銀の継続的な利上げ　②変動・固定の差が0.5%以内に縮まってきた　③残期間が10年以上ある　④家計や収入に大きな変化が見込まれる</div>`);pg++;
+  }
+
+  // ── 判断の視点 ──
+  if(s.ins){
+    const t1=beY[1]?`市場コンセンサスの中立シナリオでは <strong>${beY[1]}年目</strong> から固定が累積コストで有利になります。住み替え想定 <strong>${MV}年後</strong> がこの逆転の前か後かが変動を選ぶかどうかの分岐点です。`:`中立シナリオでも変動が全期間にわたりコスト面で有利です。`;
+    pages.push(`${hdr(pg,tot)}
+<p style="font-size:10px;font-weight:700;letter-spacing:.14em;color:#8AA8C8;margin-bottom:14px;">判断の視点</p>
+<div style="background:#EBF4FF;border-left:4px solid #1B3A5C;border-radius:0 12px 12px 0;padding:20px 24px;"><p style="font-size:13px;line-height:2.3;color:#0C1A2E;">
+現在の金利環境では楽観シナリオ（据え置き）は現実的でなく、最低でも変動 <strong>${pp(Math.max(V,1.0))}</strong> 程度への上昇は前提として置く必要があります。<br>
+${t1}<br>
+${beY[2]?`悲観シナリオでは <strong>${beY[2]}年目</strong> に逆転し、最終的に変動のほうが約 <strong>${man(vS[2].tI-fS.tI)}</strong> 割高になります。<br>`:''}
+切り替えシミュレーション（${SwY}年後・${pp(SwR)}固定）は中立変動より${swDn<0?'▼'+man(Math.abs(swDn))+' 安く':'▲'+man(swDn)+' 高く'}なります。<br>
+「何年後まで変動でいられるか」「住み替え時の残債許容度」「月返済増加の耐性」の3軸が判断軸です。
+</p></div>`);pg++;
+  }
+
+  // ── 解説コンテンツ ──
+  const eduPages=[
+    [s.mech,'固定・変動金利の仕組み',`
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <div style="background:#EBF0FB;border-radius:10px;padding:16px 18px;"><p style="font-size:12px;font-weight:600;color:#003F87;margin-bottom:8px;">固定金利</p><p style="font-size:12px;line-height:1.9;color:#0C1A2E;">借入時に決定した金利が返済終了まで変わりません。10年物国債金利（長期金利）に連動して決まります。フラット35は住宅金融支援機構と民間金融機関が提供する全期間固定型の代表商品です。</p><p style="font-size:11px;color:#1A2E4A;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,63,135,.15);"><strong>2026年4月実勢：</strong>フラット35 最低 2.49%（前月比+0.24%）</p></div>
+  <div style="background:#EBF5E8;border-radius:10px;padding:16px 18px;"><p style="font-size:12px;font-weight:600;color:#226B18;margin-bottom:8px;">変動金利</p><p style="font-size:12px;line-height:1.9;color:#0C1A2E;">日本銀行の政策金利（短期金利）に連動し、半年ごとに見直されます。一般的に5年ルール・125%ルールが適用されます。</p><p style="font-size:11px;color:#1A2E4A;margin-top:8px;padding-top:8px;border-top:1px solid rgba(34,107,24,.15);"><strong>2026年4月実勢：</strong>主要行 0.8%前後（2025年12月利上げ後に引き上げ）</p></div>
+</div>
+<div style="background:#EBF4FF;border-radius:8px;padding:14px 16px;margin-top:14px;"><p style="font-size:11px;font-weight:700;color:#1B3A5C;margin-bottom:6px;">5年ルール・125%ルールとは？</p><p style="font-size:12px;color:#1A2E4A;line-height:1.9;">金利が変わっても5年間は返済額が変わらず（5年ルール）、その後の見直し時も前の返済額の125%を超えない（125%ルール）仕組みです。急激な返済増を防ぐ一方、<strong>利息が増えた分だけ元本の減り方が遅くなる</strong>リスクがあります。住み替えを前提とする場合、残債水準に影響します。</p></div>`],
+    [s.env,'2026年の金利環境と見通し',`
+<p style="font-size:12px;line-height:2;color:#0C1A2E;margin-bottom:16px;">日本銀行は2024年3月にマイナス金利政策を解除し、その後段階的に利上げを実施。2025年12月には0.75%へ引き上げ、約30年ぶりの高水準となっています。</p>
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;">
+  <thead><tr style="background:#F7F3EE;"><th style="padding:9px 14px;text-align:left;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;width:40%;">項目</th><th style="padding:9px 14px;text-align:left;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">内容</th></tr></thead>
+  <tbody>
+    ${[['現在の政策金利','0.75%（2025年12月時点）'],['次回利上げ予想','2026年4〜7月（エコノミスト88%が予想・Bloomberg調査）'],['ターミナルレートの市場コンセンサス','1.25〜1.75%（野村證券は1.5%、NRIは1.25%を予想）'],['フラット35（2026年4月）','2.49%（前月比+0.24%・近年最大水準の上昇幅）'],['変動住宅ローン（主要行）','0.6〜1.0%程度（2025年12月利上げ後に引き上げ傾向）']].map(([k,v])=>`<tr style="border-bottom:1px solid #C8D8EE;"><td style="padding:9px 14px;font-weight:500;color:#0C1A2E;">${k}</td><td style="padding:9px 14px;color:#1A2E4A;">${v}</td></tr>`).join('')}
+  </tbody>
+</table>
+<div style="background:#EBF4FF;border-radius:8px;padding:12px 16px;font-size:12px;color:#1B3A5C;line-height:1.9;"><strong>住宅ローン選びの視点：</strong>「金利が上がるかどうか」ではなく、「どこまで・どのペースで上がるか」という視点が大切です。楽観シナリオ（据え置き）は現実的ではない局面に入っています。</div>`],
+    [s.risk,'変動金利リスクの具体的なイメージ',`
+<p style="font-size:12px;line-height:2;color:#0C1A2E;margin-bottom:14px;">政策金利が1%上昇すると、変動住宅ローンの適用金利もおおむね同程度上昇します。4,000万円・35年返済の場合の月々返済額の変化イメージです（5年ルール適用前の試算）。</p>
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;">
+  <thead><tr style="background:#F7F3EE;"><th style="padding:9px 12px;text-align:left;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">変動金利</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">月々返済額（目安）</th><th style="padding:9px 12px;text-align:right;font-weight:500;color:#8A6A50;border-bottom:2px solid #A8C0D8;">現在比での増加額</th></tr></thead>
+  <tbody>
+    ${[['0.8%（現在）','約 10.8 万円','基準','#0C8080'],['1.0%（楽観・到達点）','約 11.1 万円','+約 0.3 万円','#0C8080'],['1.5%（中立・2年後）','約 12.1 万円','+約 1.3 万円','#4A6FA8'],['2.5%（悲観・4年後）','約 14.0 万円','+約 3.2 万円','#941010'],['3.0%（悲観・7年後〜）','約 15.2 万円','+約 4.4 万円','#941010']].map(([r,m,d,c])=>`<tr style="border-bottom:1px solid #C8D8EE;"><td style="padding:9px 12px;">${r}</td><td style="padding:9px 12px;text-align:right;">${m}</td><td style="padding:9px 12px;text-align:right;font-weight:500;color:${c};">${d}</td></tr>`).join('')}
+  </tbody>
+</table>
+<div style="background:#FFF0F0;border-radius:8px;padding:12px 16px;font-size:12px;color:#5C2020;line-height:1.9;"><strong>元本減少への影響：</strong>5年ルール適用中は返済額が変わらなくても、利息増加分だけ元本の減り方が遅くなります。「返済は続けているのに残債がなかなか減らない」状況が起こりうるため、住み替えを想定している場合は残債水準を定期的に確認することが大切です。</div>`],
+    [s.mvplan,'住み替え前提のローン設計の考え方',`
+<p style="font-size:12px;line-height:2;color:#0C1A2E;margin-bottom:14px;">住み替えを前提に購入する場合、「将来の売却価格」と「その時の残債」のバランスが重要です。</p>
+<div style="background:#F7F3EE;border-radius:10px;padding:16px 20px;margin-bottom:16px;"><p style="font-size:11px;font-weight:700;color:#8A6A50;letter-spacing:.08em;margin-bottom:8px;">住み替え時の資金計算の基本式</p><p style="font-size:14px;color:#0C1A2E;font-weight:500;">売却価格 − 残債 − 仲介手数料等 ＝ 手残り（次の購入資金）</p></div>
+<p style="font-size:12px;line-height:2;color:#0C1A2E;margin-bottom:14px;">変動金利の場合、金利上昇により元本の減り方が遅くなるため、同じ期間での残債が固定金利より多くなることがあります（本シミュレーターの住み替え分析でシナリオ別に確認できます）。</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+  <div style="background:#EBF0FB;border-radius:8px;padding:12px 14px;"><p style="font-size:11px;font-weight:600;color:#003F87;margin-bottom:6px;">月あたり利息コストの活用法</p><p style="font-size:11px;line-height:1.85;color:#0C1A2E;">その期間の利息累計 ÷ 月数 ＝「実質的な月額住居費」として捉えられます。周辺の賃料相場と比べることで「借りるより買う」の費用対効果が見えやすくなります。</p></div>
+  <div style="background:#EBF5E8;border-radius:8px;padding:12px 14px;"><p style="font-size:11px;font-weight:600;color:#226B18;margin-bottom:6px;">資産性の高い物件選びとの連動</p><p style="font-size:11px;line-height:1.85;color:#0C1A2E;">売却時に残債を上回る価格が期待できる物件（駅近・利便性・管理良好）を選ぶことが、住み替え戦略の前提条件になります。</p></div>
+</div>`],
+    [s.timing,'変動→固定 切り替えタイミングの見極め方',`
+<p style="font-size:12px;line-height:2;color:#0C1A2E;margin-bottom:14px;">変動金利で借り入れた後、金融機関を通じて固定金利へ切り替えることができます。タイミングの見極めが重要です。</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+  <div style="background:#EBF0FB;border-radius:10px;padding:14px 16px;"><p style="font-size:12px;font-weight:600;color:#003F87;margin-bottom:8px;">切り替えを検討するサイン</p><ul style="font-size:11px;line-height:2;color:#0C1A2E;padding-left:16px;"><li>日銀の継続的な利上げが明確になってきた</li><li>変動・固定の差が 0.5% 以内に縮小してきた</li><li>残期間が10年以上ある</li><li>育児費用増加・転職など家計環境の変化が見込まれる</li></ul></div>
+  <div style="background:#FFF0F0;border-radius:10px;padding:14px 16px;"><p style="font-size:12px;font-weight:600;color:#941010;margin-bottom:8px;">切り替えの注意点</p><ul style="font-size:11px;line-height:2;color:#0C1A2E;padding-left:16px;"><li>金利急騰後の切り替えは高い固定金利が適用される</li><li>手数料などの諸費用が発生することがある</li><li>一度固定にすると再び変動に戻すのが難しい</li><li>残期間が短い場合、切り替えコストを回収しにくい</li></ul></div>
+</div>
+<div style="background:#EBF4FF;border-radius:8px;padding:12px 16px;font-size:12px;color:#1B3A5C;line-height:1.9;"><strong>基本的な考え方：</strong>切り替えは「金利が急騰した後」では遅い場合が多く、「上がり始めた」段階で検討するのが理想です。定期的な金利水準のチェックと、家計の変化に敏感であることが大切です。</div>`],
+    [s.gloss,'用語集',`
+<table style="width:100%;border-collapse:collapse;font-size:12px;">
+  <thead><tr style="background:#F7F3EE;"><th style="padding:9px 14px;text-align:left;font-weight:600;color:#0C1A2E;border-bottom:2px solid #A8C0D8;width:28%;">用語</th><th style="padding:9px 14px;text-align:left;font-weight:600;color:#0C1A2E;border-bottom:2px solid #A8C0D8;">説明</th></tr></thead>
+  <tbody>${[['政策金利','日本銀行が決める短期金利の誘導目標。変動金利型住宅ローンの基準金利に影響する。2026年4月現在0.75%。'],['長期金利','10年物国債の利回り。固定型住宅ローン（フラット35等）の金利水準に連動する。'],['ターミナルレート','中央銀行が目指す利上げの最終到達点。2026年の市場コンセンサスでは1.25〜1.75%とされている。'],['元利均等返済','毎月の返済額が一定で、当初は利息が多く後半ほど元本返済の割合が増える方式。多くの住宅ローンで採用。'],['5年ルール','変動金利型住宅ローンにおいて、金利が変わっても5年間は返済額を変えない仕組み。'],['125%ルール','5年ルール適用後の返済額見直し時に、前の返済額の125%を超えないようにする仕組み。'],['残債','住宅ローンのうち、まだ返済していない残りの元本。住み替え時の売却価格との差が重要。'],['オーバーローン','住宅ローンの残債が売却価格を上回る状態。売却時に差額を自己資金で補填する必要がある。'],['フラット35','住宅金融支援機構と民間金融機関が提携する全期間固定金利型ローン。最長35年。'],['審査金利','借入可能額を計算する際に使う金利。実際の適用金利より高く設定される（通常3〜4%程度）。']].map(([t,d])=>`<tr style="border-bottom:1px solid #C8D8EE;"><td style="padding:9px 14px;font-weight:500;color:#0C1A2E;">${t}</td><td style="padding:9px 14px;color:#1A2E4A;line-height:1.8;">${d}</td></tr>`).join('')}</tbody>
+</table>`]
+  ];
+
+  for(const[show,title,content] of eduPages){
+    if(!show)continue;
+    pages.push(`${hdr(pg,tot)}<h2 style="font-family:'Noto Serif JP',Georgia,serif;font-size:18px;font-weight:600;color:#0C1A2E;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #C8D8EE;">${title}</h2>${content}`);
+    pg++;
+  }
+
+  return`<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>${cfg.title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans JP',sans-serif;color:#0C1A2E;background:white;}
+@page{size:A4 landscape;margin:16mm 20mm;}
+@media print{.page{page-break-after:always;page-break-inside:avoid;}.page:last-child{page-break-after:avoid;}}
+.page{padding:8px 0;min-height:178mm;}
+strong{font-weight:600;}
+</style>
+</head>
+<body>
+${pages.map(p=>`<div class="page">${p}</div>`).join('\n')}
+</body>
+</html>`;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+['i-amt','i-term','i-fix','i-var','i-mv','i-sw-yr'].forEach(id=>{document.getElementById(id).addEventListener('input',update);});
+update();
+
+// ── Life Plan ─────────────────────────────────────────────────────────────────
+const LP_M=[
+  {id:'h', label:'夫',   isP:true},
+  {id:'w', label:'妻',   isP:true},
+  {id:'c1',label:'第1子',isC:true},
+  {id:'c2',label:'第2子',isC:true},
+  {id:'c3',label:'第3子',isC:true},
+  {id:'c4',label:'第4子',isC:true},
+];
+const LP_EDU=[
+  {key:'baby',   label:'乳幼児', lo:0, hi:2,  cpY:0,   ent:0,  bg:'#D1FAE5',tx:'#065F46'},
+  {key:'kinder', label:'幼稚園', lo:3, hi:5,  cpY:52,  ent:15, bg:'#6EE7B7',tx:'#064E3B'},
+  {key:'elem',   label:'小学校', lo:6, hi:11, cpY:40,  ent:8,  bg:'#93C5FD',tx:'#1E3A8A'},
+  {key:'mid',    label:'中学校', lo:12,hi:14, cpY:55,  ent:15, bg:'#FCD34D',tx:'#92400E'},
+  {key:'high',   label:'高校',   lo:15,hi:17, cpY:110, ent:35, bg:'#FB923C',tx:'#7C2D12'},
+  {key:'univ',   label:'大学',   lo:18,hi:21, cpY:100, ent:80, bg:'#FCA5A5',tx:'#7F1D1D'},
+  {key:'adult',  label:'社会人', lo:22,hi:99, cpY:0,   ent:0,  bg:'#E5E7EB',tx:'#374151'},
+];
+const CHILD_COLORS=['#2563EB','#0891B2','#7C3AED','#0E7490'];
+let lpChart=null;
+
+function lpEduAt(age){return LP_EDU.find(s=>age>=s.lo&&age<=s.hi)||LP_EDU[LP_EDU.length-1];}
+function lpAdultLabel(age){return age<40?'現役（子育て期）':age<50?'現役（40代）':age<55?'現役（50代前半）':age<60?'現役（50代後半）':age<65?'定年前後':'退職後';}
+
+// ── 手取り推計（給与所得者・独身ベース簡易算出）──
+function calcTakeHome(gross){
+  if(!gross||gross<=0)return 0;
+  // 実効手取り率テーブル（社保約15%+所得税+住民税を考慮）
+  const t=[[0,.85],[150,.84],[200,.83],[300,.81],[400,.79],[500,.77],[600,.75],[700,.73],[800,.71],[1000,.68],[1200,.65],[1500,.61],[2000,.57]];
+  let r=.57;
+  for(let i=0;i<t.length-1;i++){
+    if(gross>=t[i][0]&&gross<t[i+1][0]){const f=(gross-t[i][0])/(t[i+1][0]-t[i][0]);r=t[i][1]*(1-f)+t[i+1][1]*f;break;}
+    else if(gross<t[0][0])r=t[0][1];
+  }
+  return Math.round(gross*r);
+}
+
+function toggleSwSection(){
+  const body=document.getElementById('sw-body');
+  const icon=document.getElementById('sw-toggle-icon');
+  if(!body||!icon)return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  icon.textContent=open?'▼':'▲';
+  icon.style.transform=open?'rotate(0deg)':'';
+}
+
+function lpSwitchTab(name, btn){
+  ['fam','inc','cost'].forEach(n=>{
+    document.getElementById('lp-tab-'+n).style.display=n===name?'block':'none';
+  });
+  btn.closest('.card,div').querySelectorAll('.lp-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function lpToggleML(){
+  const on=document.getElementById('lp-ml-on').checked;
+  document.getElementById('lp-ml-panel').style.display=on?'block':'none';
+  updateLifePlan();
+}
+
+// 無償化後の年間費用（東京都基準・2026年度）
+// 根拠: 国の幼保無償化(月3.7万上限)、東京都独自補助、都内区の給食費無償化、東京都私立高校授業料補助(年収910万未満)
+const LP_EDU_SUB={baby:0,kinder:10,elem:30,mid:45,high:40,univ:100,adult:0};
+const LP_EDU_SUB_NOTE={
+  kinder:'国の無償化＋都補助で実質無料圏。自己負担は入園費・給食費等の実費のみ（約10万/年）',
+  elem:'義務教育で授業料無料。都内多くの区で給食費無償化済み。学用品・校外活動費等残存',
+  mid:'同上。給食費は区により対応差あり',
+  high:'東京都の授業料補助（年収910万未満世帯対象）で授業料相当を補助。施設費・教材費等は残存（約40万/年）',
+  univ:'高等教育支援制度は年収380万未満世帯向けで一般的な共働き世帯には恩恵少。費用は変更なし',
+};
+
+function lpGetEduCost(age){
+  const s=lpEduAt(age);
+  const subOn=document.getElementById('lp-sub-on')&&document.getElementById('lp-sub-on').checked;
+  return subOn?(LP_EDU_SUB[s.key]||0):s.cpY;
+}
+
+const CHILD_COLORS_LIGHT=['#93C5FD','#67E8F9','#C4B5FD','#6EE7F9'];
+const LP_EXTRA={
+  baby:  {label:'保育料（認可）',   monthly:4.0},
+  kinder:{label:'習い事・延長保育', monthly:2.0},
+  elem:  {label:'学童・習い事',     monthly:4.0},
+  mid:   {label:'習い事・塾',       monthly:5.0},
+  high:  {label:'塾・活動費',       monthly:4.5},
+  univ:  {label:'交通費等',         monthly:2.0},
+  adult: {label:'',                 monthly:0  },
+};
+function lpGetExtraCost(age){
+  const s=lpEduAt(age);const e=LP_EXTRA[s.key];
+  return e?Math.round(e.monthly*12):0;
+}
+function lpToggleExtra(){
+  const on=document.getElementById('lp-extra-on').checked;
+  document.getElementById('lp-extra-info').style.display=on?'block':'none';
+  updateLifePlan();
+}
+
+function lpToggle(){
+  const single=document.getElementById('lp-single').checked;
+  document.getElementById('lp-multi-panel').style.display=single?'none':'grid';
+  if(single){LP_M.forEach(m=>{const ai=document.getElementById('lp-age-'+m.id);if(ai)ai.disabled=true;});}
+  else{LP_M.forEach(m=>lpApplyDim(m.id));}
+  updateLifePlan();
+}
+
+function lpCb(id){lpApplyDim(id);updateLifePlan();}
+function lpApplyDim(id){
+  const cb=document.getElementById('lp-cb-'+id);
+  const row=document.getElementById('lp-row-'+id);
+  const ai=document.getElementById('lp-age-'+id);
+  if(!cb||!row||!ai)return;
+  ai.disabled=!cb.checked;
+  row.classList.toggle('lp-dim',!cb.checked);
+}
+
+function lpGetMembers(){
+  if(document.getElementById('lp-single').checked)return[];
+  return LP_M.filter(m=>{
+    const cb=document.getElementById('lp-cb-'+m.id);
+    const ai=document.getElementById('lp-age-'+m.id);
+    const v=ai?ai.value:'';
+    return cb&&cb.checked&&v!=='';
+  });
+}
+
+function updateLifePlan(){
+  try{if(!LP_M||!RD.fS)return;}catch(e){return;}
+  const dm=+document.getElementById('lp-delivery').value||0;
+  const df=dm/12;
+  const T=+document.getElementById('i-term').value||35;
+  const showYrs=Math.min(T,25);
+  const members=lpGetMembers();
+  const children=members.filter(m=>m.isC);
+  const currentYear=new Date().getFullYear();
+  const delYear=currentYear+Math.round(df);
+  const subOn=document.getElementById('lp-sub-on')&&document.getElementById('lp-sub-on').checked;
+  const lpScen=+(document.querySelector('input[name="lp-scen"]:checked')?.value??1);
+  const lpScenNames=['楽観','中立','悲観'];
+
+  // ── 年収・産育休設定 ──
+  const incH=+document.getElementById('lp-inc-h').value||0;
+  const incW=+document.getElementById('lp-inc-w').value||0;
+  const mlOn=document.getElementById('lp-ml-on').checked;
+  const mlMo=mlOn?(+document.getElementById('lp-ml-mo').value||12):0;
+  const stYr=mlOn?(+document.getElementById('lp-st-yr').value||0):0;
+  const stPct=mlOn?((+document.getElementById('lp-st-pct').value||80)/100):1;
+  const thH=calcTakeHome(incH);
+  const thW=calcTakeHome(incW);
+  const thNormal=thH+thW;
+  const thNormalMo=Math.round(thNormal/12);
+  // 育休中：育休給付金（非課税）を月額換算
+  const mlMoH=Math.min(mlMo,6);const mlMoL=Math.max(0,mlMo-6);
+  const wLeaveAnnual=mlOn&&incW>0?incW*(mlMoH*0.67+mlMoL*0.50)/12*12:0;// 育休期間中の年収相当
+  const thLeaveMo=Math.round((thH+wLeaveAnnual)/12);// 月額（社保等省略の簡易値）
+  const thShortMo=Math.round((thH+calcTakeHome(Math.round(incW*stPct)))/12);
+
+  // ── 引き渡し時カード ──
+  const delEl=document.getElementById('lp-del-sum');
+  const hhEl=document.getElementById('lp-hh-metrics');
+  if(members.length===0){
+    delEl.innerHTML='<p style="font-size:12px;color:var(--tx3);">「複数同居」を選択し、各メンバーのチェックと年齢を入力してください。</p>';
+    hhEl.style.display='none';
+    document.getElementById('lp-chart-wrap').style.display='none';
+    document.getElementById('lp-ev-wrap').style.display='none';
+    return;
+  }
+  const delCards=members.map(m=>{
+    const cur=+document.getElementById('lp-age-'+m.id).value||0;
+    const age=Math.round(cur+df);
+    let bg,tx,sl;
+    if(m.isC){const s=lpEduAt(age);bg=s.bg;tx=s.tx;sl=s.label;}
+    else{bg='rgba(215,235,255,.70)';tx='#1B3A5C';sl=lpAdultLabel(age);}
+    let nextNote='';
+    if(m.isC){const next=LP_EDU.find(s=>s.lo>age&&s.cpY>0);if(next)nextNote=`<div style="font-size:9px;color:#8AA8C8;margin-top:5px;">${next.lo-age}年後: ${next.label}入学</div>`;}
+    return`<div style="background:var(--sf);border:1px solid var(--bdl);border-radius:12px;padding:14px 16px;flex-shrink:0;min-width:110px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--tx3);margin-bottom:5px;">${m.label}</div>
+      <div style="font-size:26px;font-weight:300;color:var(--tx);line-height:1.1;">${age}<span style="font-size:11px;color:var(--tx2);"> 歳</span></div>
+      <span class="lp-stage-chip" style="background:${bg};color:${tx};">${sl}</span>${nextNote}</div>`;
+  }).join('');
+  delEl.innerHTML=`<div style="font-size:11px;font-weight:500;color:var(--tx2);margin-bottom:10px;">引き渡し時（約${delYear}年）の家族状況</div><div style="display:flex;gap:10px;flex-wrap:wrap;">${delCards}</div>`;
+
+  // ── 家計耐力メトリクス ──
+  if(thNormal>0){
+    hhEl.style.display='block';
+    const mortMonthly=RD.vS&&RD.vS[lpScen]&&RD.vS[lpScen].out[0]?+(RD.vS[lpScen].out[0].pay/10000).toFixed(1):0;
+    const loanRatio=thNormalMo>0?Math.round(mortMonthly/thNormalMo*100):0;
+    const lrColor=loanRatio<=25?'#0C8080':loanRatio<=30?'#4A6FA8':'#941010';
+    const lrNote=loanRatio<=25?'目安25%以内・安心':loanRatio<=30?'目安25〜30%・注意':'目安30%超・要検討';
+    const cards=[
+      {label:'世帯手取り（月・通常時）',val:thNormalMo+'万円',sub:`年${thNormal}万円（推計）`,color:'var(--cf)'},
+      ...(mlOn&&incW>0?[{label:'育休中の月収入（試算）',val:thLeaveMo+'万円',sub:`育休${mlMo}ヶ月（給付金含む）`,color:'#4A6FA8'}]:[]),
+      ...(mlOn&&stYr>0?[{label:'時短中の月収入',val:thShortMo+'万円',sub:`${Math.round(stPct*100)}%×${stYr}年間`,color:'#3B5CA8'}]:[]),
+      {label:'ローン返済比率（通常・月）',val:loanRatio+'%',sub:lrNote,color:lrColor},
+    ];
+    hhEl.innerHTML=`<div style="font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--tx3);margin-bottom:10px;">家計耐力の概算（手取り推計・参考値）</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;">
+        ${cards.map(c=>`<div style="background:var(--bg);border-radius:9px;padding:12px 14px;">
+          <div style="font-size:10px;color:var(--tx3);margin-bottom:5px;">${c.label}</div>
+          <div style="font-size:20px;font-weight:500;color:${c.color};">${c.val}</div>
+          <div style="font-size:10px;color:var(--tx3);margin-top:3px;">${c.sub}</div>
+        </div>`).join('')}
+      </div>
+      <p style="font-size:10px;color:var(--tx3);margin-top:8px;">※ 手取り推計は扶養なし・一般的な社会保険料等を考慮した簡易計算です。実際の手取り・税額はFPまたは税理士にご確認ください。</p>`;
+  } else {
+    hhEl.style.display='none';
+  }
+
+  if(children.length===0){
+    document.getElementById('lp-chart-wrap').style.display='none';
+    document.getElementById('lp-ev-wrap').style.display='none';
+    return;
+  }
+  document.getElementById('lp-chart-wrap').style.display='block';
+  document.getElementById('lp-ev-wrap').style.display='block';
+
+  // ── 年次データ構築 ──
+  const xLabels=Array.from({length:showYrs},(_,i)=>(i+1)+'年目');
+  const mlFracYears=mlMo/12;
+  const extraOn=document.getElementById('lp-extra-on')&&document.getElementById('lp-extra-on').checked;
+  const livingMo=+document.getElementById('lp-living-mo').value||0;
+  const livingAnnual=livingMo*12;
+
+  const cDS=children.map((c,ci)=>{
+    const startAge=Math.round(+document.getElementById('lp-age-'+c.id).value+df);
+    return{label:c.label+'教育費',data:Array.from({length:showYrs},(_,y)=>lpGetEduCost(startAge+y)),backgroundColor:CHILD_COLORS[ci],borderRadius:2,stack:'edu'};
+  });
+  const xDS=extraOn?children.map((c,ci)=>{
+    const startAge=Math.round(+document.getElementById('lp-age-'+c.id).value+df);
+    return{label:c.label+'課外費用',data:Array.from({length:showYrs},(_,y)=>lpGetExtraCost(startAge+y)),backgroundColor:CHILD_COLORS_LIGHT[ci],borderRadius:1,stack:'edu'};
+  }):[];
+  const allCostDS=[...cDS,...xDS];
+
+  const mortData=Array.from({length:showYrs},(_,y)=>{
+    const o=RD.vS&&RD.vS[lpScen]&&RD.vS[lpScen].out[y];return o?Math.round(o.pay*12/10000):0;
+  });
+  let incomeData=null;
+  if(thNormal>0){
+    incomeData=Array.from({length:showYrs},(_,y)=>{
+      let wInc=incW;
+      if(mlOn&&incW>0){
+        if(y<mlFracYears){const mo6=Math.min(mlMo,6);const moR=Math.max(0,mlMo-6);wInc=incW*(mo6*0.67+moR*0.50)/Math.max(mlMo,1);}
+        else if(y<mlFracYears+stYr){wInc=incW*stPct;}
+      }
+      return Math.round(calcTakeHome(incH)+calcTakeHome(Math.round(wInc)));
+    });
+  }
+
+  // ── キャッシュフローチャート（改）──────────────────────────────────────────
+  const ctx=document.getElementById('lp-chart');
+  if(lpChart){lpChart.destroy();lpChart=null;}
+  // Chart.js v4: getChart() でキャンバスに既存チャートがあれば破棄
+  const netCtx=document.getElementById('lp-net-chart');
+  if(netCtx){const prev=Chart.getChart(netCtx);if(prev)prev.destroy();}
+
+  // カラーパレット（明確な差別化）
+  const LOAN_COLOR='#60A5FA';      // 青 — ローン
+  const LIVING_COLOR='#CBD5E1';    // 薄グレー — 生活費
+  const EDU_COLORS=['#F59E0B','#EC4899','#8B5CF6','#14B8A6'];   // 子ども教育費
+  const EDU_LIGHT=['#FDE68A','#FBCFE8','#DDD6FE','#99F6E4'];    // 課外費（薄）
+  const INC_COLOR='#16A34A';       // 濃い緑 — 収入ライン
+
+  // totalCost/year（収支計算用）
+  const totalCostArr=Array.from({length:showYrs},(_,y)=>
+    (livingMo>0?livingAnnual:0)+(mortData[y]||0)+
+    cDS.reduce((s,ds)=>s+(ds.data[y]||0),0)+
+    (extraOn?xDS.reduce((s,ds)=>s+(ds.data[y]||0),0):0));
+
+  // データセット（下から積む順: 生活費 → ローン → 子教育費 → 課外費）
+  const datasets=[
+    ...(livingMo>0?[{label:'基本生活費',data:Array(showYrs).fill(livingAnnual),backgroundColor:LIVING_COLOR,borderRadius:0,stack:'cost',borderSkipped:false}]:[]),
+    {label:`ローン（${lpScenNames[lpScen]}）`,data:mortData,backgroundColor:LOAN_COLOR,borderRadius:0,stack:'cost',borderSkipped:false},
+    ...cDS.map((ds,ci)=>({...ds,backgroundColor:EDU_COLORS[ci]||'#94A3B8',borderRadius:ci===cDS.length-1&&!extraOn?2:0,stack:'cost',borderSkipped:false})),
+    ...(extraOn?xDS.map((ds,ci)=>({...ds,backgroundColor:EDU_LIGHT[ci]||'#E5E7EB',borderRadius:ci===xDS.length-1?2:0,stack:'cost',borderSkipped:false})):[]),
+    // 収入ライン — 太く、目立つドット付き
+    ...(incomeData?[{
+      type:'line',label:'世帯手取り年収',data:incomeData,
+      borderColor:INC_COLOR,borderWidth:3,
+      pointRadius:4,pointBackgroundColor:INC_COLOR,pointBorderColor:'#FFF',pointBorderWidth:2,
+      pointHoverRadius:6,tension:0,fill:false,stack:undefined,order:0
+    }]:[]),
+  ];
+
+  // 収支ゾーンPlugin（beforeDatasetsDraw で棒の背面に描画）
+  const cfZonePlugin={
+    id:'cfZone',
+    beforeDatasetsDraw(chart){
+      if(!incomeData||!totalCostArr)return;
+      const{ctx:c2,chartArea,scales:{x,y}}=chart;
+      if(!chartArea)return;
+      c2.save();
+      c2.rect(chartArea.left,chartArea.top,chartArea.width,chartArea.height);
+      c2.clip();
+      for(let i=0;i<showYrs;i++){
+        const px=x.getPixelForValue(i);
+        const bw=(x.getPixelForValue(1)-x.getPixelForValue(0))*0.82;
+        const left=px-bw/2,right=px+bw/2;
+        const tc=totalCostArr[i]||0;
+        const inc=incomeData[i]||0;
+        const incPx=y.getPixelForValue(inc);
+        const tcPx=y.getPixelForValue(tc);
+        if(inc>=tc){
+          c2.fillStyle='rgba(22,163,74,.14)';
+          c2.fillRect(left,incPx,right-left,tcPx-incPx);
+        } else {
+          c2.fillStyle='rgba(220,38,38,.16)';
+          c2.fillRect(left,tcPx,right-left,incPx-tcPx);
+        }
+      }
+      c2.restore();
+    }
+  };
+
+  lpChart=new Chart(ctx,{
+    type:'bar',data:{labels:xLabels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,23,42,.88)',
+          titleFont:{family:"'M PLUS Rounded 1c',sans-serif",size:12},
+          bodyFont:{family:"'M PLUS 1p',sans-serif",size:11},
+          footerFont:{family:"'M PLUS 1p',sans-serif",size:11},
+          padding:12,cornerRadius:8,
+          callbacks:{
+            title:i=>`返済 ${i[0].label}`,
+            label:c=>{
+              if(c.parsed.y===null||c.parsed.y===undefined)return null;
+              return ` ${c.dataset.label}: ${c.parsed.y.toLocaleString()}万円`;
+            },
+            footer:items=>{
+              const y=items[0].dataIndex;
+              const ages=members.map(m=>{
+                const sa=Math.round(+document.getElementById('lp-age-'+m.id).value+df);
+                return`${m.label}${sa+y}歳`;
+              }).join(' / ');
+              const tc=totalCostArr[y]||0;
+              const inc=incomeData?incomeData[y]:null;
+              const net=inc!==null?inc-tc:null;
+              const lines=[`📅 ${ages}`,'─────────────────',`支出合計: ${tc.toLocaleString()}万円`];
+              if(inc)lines.push(`手取り収入: ${inc.toLocaleString()}万円`);
+              if(net!==null){
+                const icon=net>=0?'✅':'⚠️';
+                const sign=net>=0?'+':'';
+                lines.push(`${icon} 収支: ${sign}${net.toLocaleString()}万円/年（月${sign}${Math.round(net/12)}万）`);
+              }
+              return lines;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false},
+          ticks:{
+            font:{family:"'M PLUS Rounded 1c',sans-serif",size:10},color:'#64748B',
+            maxTicksLimit:14,
+            callback:(val,index)=>xLabels[index]||val
+          }
+        },
+        y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11},color:'#94A3B8',callback:v=>v+'万'},beginAtZero:true,afterFit:s=>{s.width=56;}}
+      }
+    },
+    plugins:[cfZonePlugin]
+  });
+
+  // ガントチャートを chart 作成直後に描画
+  requestAnimationFrame(()=>renderAgeGantt(lpChart,members,df,showYrs));
+
+  // ── 下段: 収支差額バー ──
+  if(incomeData&&netCtx){
+    const netData=Array.from({length:showYrs},(_,y)=>(incomeData[y]||0)-(totalCostArr[y]||0));
+    const netBg=netData.map(v=>v>=0?'rgba(22,163,74,.75)':'rgba(220,38,38,.75)');
+    const netBdr=netData.map(v=>v>=0?'#16A34A':'#DC2626');
+    const netInst=new Chart(netCtx,{
+      type:'bar',
+      data:{labels:xLabels,datasets:[{
+        data:netData,backgroundColor:netBg,borderColor:netBdr,borderWidth:1,
+        borderRadius:2,borderSkipped:false
+      }]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{
+          callbacks:{
+            title:i=>`返済 ${i[0].label}`,
+            label:c=>{const v=c.parsed.y;const s=v>=0?'+':'';return` ${s}${v.toLocaleString()}万円/年（月${s}${Math.round(v/12)}万）`;}
+          }
+        }},
+        scales:{
+          x:{grid:{display:false},ticks:{font:{size:9},color:'#CBD5E1',maxTicksLimit:13}},
+          y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:9},color:'#94A3B8',callback:v=>v+'万'},
+            afterFit:s=>{s.width=56;},
+            afterDataLimits:sc=>{const mx=Math.max(Math.abs(sc.max),Math.abs(sc.min),50);sc.max=mx;sc.min=-mx;}}
+        }
+      }
+    });
+    netCtx._chartInstance=null;// replaced by Chart.getChart() approach
+  }
+
+  // ── 凡例 ──
+  const lgEl=document.getElementById('lp-legend');
+  lgEl.innerHTML=[
+    ...(livingMo>0?[{c:LIVING_COLOR,l:'生活費'}]:[]),
+    {c:LOAN_COLOR,l:`ローン(${lpScenNames[lpScen]})`},
+    ...cDS.map((ds,ci)=>({c:EDU_COLORS[ci],l:ds.label.replace('教育費','')})),
+    ...(extraOn?xDS.map((ds,ci)=>({c:EDU_LIGHT[ci],l:ds.label.replace('課外費用','課外')})):[]),
+    ...(incomeData?[{c:INC_COLOR,l:'手取り年収',line:true}]:[]),
+  ].map(({c,l,line})=>
+    line?`<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#475569;"><svg width="24" height="12"><line x1="0" y1="6" x2="24" y2="6" stroke="${c}" stroke-width="3"/><circle cx="12" cy="6" r="3" fill="${c}" stroke="white" stroke-width="1"/></svg>${l}</div>`
+        :`<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#475569;"><span style="width:10px;height:10px;border-radius:2px;background:${c};display:inline-block;flex-shrink:0;"></span>${l}</div>`
+  ).join('');
+
+  // 家族年齢バー（X軸に統合済み）
+  // ── ピーク・イベント計算 ──
+  const combined=Array.from({length:showYrs},(_,y)=>allCostDS.reduce((s,ds)=>s+(ds.data[y]||0),0)+(mortData[y]||0)+(livingMo>0?livingAnnual:0));
+  const peakIdx=combined.indexOf(Math.max(...combined));
+  const peakEdu=cDS.reduce((s,ds)=>s+(ds.data[peakIdx]||0),0);
+  const peakExtra=xDS.reduce((s,ds)=>s+(ds.data[peakIdx]||0),0);
+  const peakMort=mortData[peakIdx]||0;
+  const peakTotal=peakEdu+peakExtra+peakMort+(livingMo>0?livingAnnual:0);
+  const peakInc=incomeData?incomeData[peakIdx]:null;
+  const surplus=peakInc!==null?peakInc-peakTotal:null;
+  const surColor=surplus===null?'':surplus>120?'#0C8080':surplus>60?'#4A6FA8':surplus>=0?'#941010':'#6B0000';
+  const surLabel=surplus===null?'':surplus>120?'余裕あり':surplus>60?'注意':surplus>=0?'要検討':'収支赤字';
+  const peakAges=members.map(m=>{const sa=Math.round(+document.getElementById('lp-age-'+m.id).value+df);return`${m.label}${sa+peakIdx}歳`;}).join('・');
+
+  document.getElementById('lp-peak').innerHTML=`
+    <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--tx3);margin-bottom:4px;">年間負担のピーク（返済${peakIdx+1}年目）</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;">${peakAges}</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+      <div><div style="font-size:10px;color:var(--tx3);margin-bottom:3px;">教育費${subOn?'（無償化後）':''}</div><div style="font-size:20px;font-weight:300;color:var(--tx);">${peakEdu}<span style="font-size:11px;">万円</span></div></div>
+      ${extraOn&&peakExtra>0?`<div><div style="font-size:10px;color:var(--tx3);margin-bottom:3px;">課外費用</div><div style="font-size:20px;font-weight:300;color:var(--tx);">${peakExtra}<span style="font-size:11px;">万円</span></div></div>`:''}
+      <div><div style="font-size:10px;color:var(--tx3);margin-bottom:3px;">住宅ローン</div><div style="font-size:20px;font-weight:300;color:#003F87;">${peakMort}<span style="font-size:11px;">万円</span></div></div>
+      ${livingMo>0?`<div><div style="font-size:10px;color:var(--tx3);margin-bottom:3px;">基本生活費</div><div style="font-size:20px;font-weight:300;color:#6B7280;">${livingAnnual}<span style="font-size:11px;">万円</span></div></div>`:''}
+      <div style="border-left:2px solid var(--bdl);padding-left:14px;"><div style="font-size:10px;color:var(--tx3);margin-bottom:3px;">支出合計</div><div style="font-size:22px;font-weight:500;color:var(--c3);">${peakTotal}<span style="font-size:12px;">万円</span></div><div style="font-size:11px;color:var(--tx3);margin-top:2px;">月換算 約${Math.round(peakTotal/12)}万円</div></div>
+      ${surplus!==null?`<div style="border-left:2px solid var(--bdl);padding-left:14px;"><div style="font-size:10px;color:var(--tx3);margin-bottom:3px;">手取りとの差（試算）</div><div style="font-size:22px;font-weight:500;color:${surColor};">${surplus>=0?'+':''}${surplus}<span style="font-size:12px;">万円</span></div><div style="font-size:10px;color:${surColor};margin-top:2px;font-weight:500;">${surLabel}（月${Math.round(surplus/12)}万円）</div></div>`:''}
+    </div>`;
+
+  // ── イベント表 ──
+  const events=[];
+  children.forEach(c=>{
+    const startAge=Math.round(+document.getElementById('lp-age-'+c.id).value+df);
+    const delSt=lpEduAt(startAge);
+    if(delSt.cpY>0)events.push({yr:1,approxYear:delYear,member:c.label,age:startAge,st:delSt,ent:0,ongoing:true});
+    for(let y=2;y<=showYrs;y++){
+      const age=startAge+y-1,st=lpEduAt(age),prev=lpEduAt(age-1);
+      if(st.key!==prev.key&&st.cpY>0)events.push({yr:y,approxYear:delYear+y-1,member:c.label,age,st,ent:st.ent,ongoing:false});
+    }
+  });
+  const evBody=document.getElementById('lp-ev-body');
+  if(events.length===0){
+    evBody.innerHTML='<tr><td colspan="5" style="padding:12px;text-align:center;color:var(--tx3);font-size:12px;">返済期間中に主要な教育イベントはありません。</td></tr>';
+  }else{
+    evBody.innerHTML=events.map(e=>{
+      const subCost=lpGetEduCost(e.age);
+      const extraCost=extraOn?lpGetExtraCost(e.age):0;
+      const subNote=subOn&&e.st.cpY!==subCost?`<span style="font-size:9px;color:#226B18;margin-left:4px;">→無償化後${subCost}万円</span>`:'';
+      const extraNote=extraOn&&extraCost>0?`<br><span style="font-size:10px;color:#6B7280;">+課外費用 ${extraCost}万円（${LP_EXTRA[e.st.key]?.label||''}）</span>`:'';
+      return`<tr style="border-bottom:1px solid #F5EEE6;">
+        <td style="padding:8px 12px;font-size:12px;">返済 ${e.yr}年目</td>
+        <td style="padding:8px 12px;font-size:11px;color:var(--tx2);">約${e.approxYear}年</td>
+        <td style="padding:8px 12px;font-size:12px;">${e.member} <span style="color:var(--tx3);">${e.age}歳</span></td>
+        <td style="padding:8px 12px;"><span style="font-size:10px;font-weight:500;padding:3px 10px;border-radius:8px;background:${e.st.bg};color:${e.st.tx};">${e.st.label}${e.ongoing?'（在籍中）':'入学'}</span></td>
+        <td style="padding:8px 12px;text-align:right;font-size:12px;">${e.ent>0?`<span style="color:var(--c3);font-size:11px;">入学一時費用 +${e.ent}万円</span><br>`:''}年間 <strong>+${e.st.cpY}万円</strong>${subNote}${extraNote}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+updateLifePlan();
+
+// ── Age Gantt chart ─────────────────────────────────────────────────────────
+function renderAgeGantt(chart,members,df,showYrs){
+  const el=document.getElementById('lp-age-bar');
+  if(!el||!chart||!chart.scales||!chart.scales.x)return;
+  const x=chart.scales.x;
+
+  // 各年のバー中心座標を Scale から正確に取得
+  const pos=Array.from({length:showYrs},(_,yr)=>x.getPixelForValue(yr));
+  if(pos.length<2||isNaN(pos[0]))return;
+  const bw=(pos[1]-pos[0])*0.88;          // バー幅（間隔の88%）
+  const leftEdge=pos[0]-bw/2;             // 1年目セルの左端（＝Y軸ラベル幅）
+
+  // 大人年代カラー
+  const adultCol=age=>age<40?{bg:'#DBEAFE',tx:'#1E40AF'}:age<50?{bg:'#DCFCE7',tx:'#166534'}:age<55?{bg:'#FEF9C3',tx:'#854D0E'}:age<60?{bg:'#FFEDD5',tx:'#9A3412'}:{bg:'#FCE7F3',tx:'#9D174D'};
+
+  const ROW=22;
+  const svgH=members.length*ROW+2;
+
+  // ラベル列（左） + セル列（絶対配置）
+  let inner='';
+  members.forEach((m,mi)=>{
+    const sa=Math.round(+document.getElementById('lp-age-'+m.id).value+df);
+    const y0=mi*ROW;
+
+    // メンバーラベル
+    inner+=`<div style="position:absolute;left:0;top:${y0}px;width:${leftEdge-4}px;height:${ROW-2}px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;">
+      <span style="font-family:'M PLUS Rounded 1c',sans-serif;font-size:9px;font-weight:700;color:#64748B;white-space:nowrap;">${m.label}</span>
+    </div>`;
+
+    // 各年セル
+    for(let yr=0;yr<showYrs;yr++){
+      const age=sa+yr;
+      let bg,tx;
+      if(m.isC){const st=lpEduAt(age);bg=st.bg;tx=st.tx;}
+      else{const ac=adultCol(age);bg=ac.bg;tx=ac.tx;}
+      const cx=pos[yr];
+      const xl=cx-bw/2;
+      // ステージ変化か5年節目のみラベル
+      const stageChanged=m.isC&&yr>0&&lpEduAt(age).key!==lpEduAt(sa+yr-1).key;
+      const showLabel=yr===0||yr%5===0||stageChanged;
+      inner+=`<div style="position:absolute;left:${xl}px;top:${y0+1}px;width:${bw}px;height:${ROW-3}px;background:${bg};border-radius:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+        ${showLabel?`<span style="font-family:'M PLUS Rounded 1c',sans-serif;font-size:8px;font-weight:700;color:${tx};white-space:nowrap;line-height:1;">${age}</span>`:''}
+      </div>`;
+    }
+  });
+
+  // ライフステージ凡例
+  const hasChild=members.some(m=>m.isC);
+  const legend=hasChild?`<div style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 0 0 ${leftEdge}px;font-family:'M PLUS Rounded 1c',sans-serif;font-size:9px;">
+    ${LP_EDU.filter(s=>s.key!=='adult').map(s=>`<span style="display:flex;align-items:center;gap:3px;"><span style="width:9px;height:9px;background:${s.bg};border-radius:2px;display:inline-block;"></span><span style="color:${s.tx};font-weight:700;">${s.label}</span></span>`).join('')}
+  </div>`:''
+
+  el.innerHTML=`<div style="position:relative;height:${svgH}px;">${inner}</div>${legend}`;
+}
+
+// ── Sparklines ─────────────────────────────────────────────────────────────
+function drawSparkline(sched,V,color,W=100,H=34){
+  const YRS=16,maxR=Math.max(...sched.map(s=>s.r),V)+0.15,minR=Math.max(0,V-0.1);
+  const pts=Array.from({length:YRS},(_,i)=>{
+    const r=sched.reduce((a,s)=>i>=s.y?s.r:a,V);
+    return{x:(2+i/(YRS-1)*(W-4)).toFixed(1),y:(H-5-(r-minR)/(maxR-minR)*(H-10)).toFixed(1),r};
+  });
+  const pd=pts.map((p,i)=>`${i?'L':'M'}${p.x} ${p.y}`).join(' ');
+  const gid=`sg${color.replace('#','')}`;const lp=pts[YRS-1];
+  return`<svg width="${W}" height="${H}" style="display:block;overflow:visible;">
+  <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${color}" stop-opacity=".20"/>
+    <stop offset="100%" stop-color="${color}" stop-opacity=".02"/>
+  </linearGradient></defs>
+  <path d="${pd} L${lp.x} ${H-2} L${pts[0].x} ${H-2} Z" fill="url(#${gid})" stroke="none"/>
+  <path d="${pd}" stroke="${color}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="${lp.x}" cy="${lp.y}" r="3" fill="${color}" stroke="white" stroke-width="1.5"/>
+  <text x="${+lp.x+6}" y="${+lp.y+4}" font-family="'M PLUS 1p',sans-serif" font-size="9" fill="${color}" font-weight="500">${lp.r.toFixed(2)}%</text>
+  </svg>`;
+}
+
+// ── Rate Gauge ──────────────────────────────────────────────────────────────
+function renderRateGauge(V,F){
+  const toP=r=>Math.max(2,Math.min(98,r/3.5*100));
+  const vp=toP(V),fp=toP(F),lp=toP(1.25),hp=toP(1.75);
+  return`<div style="margin-top:12px;display:flex;align-items:center;gap:8px;font-family:'M PLUS Rounded 1c',sans-serif;font-size:10px;color:var(--tx3);flex-wrap:wrap;">
+  <span style="font-weight:500;">0%</span>
+  <div style="flex:1;min-width:120px;position:relative;height:8px;border-radius:4px;background:linear-gradient(to right,rgba(30,100,200,.22) 0%,rgba(80,120,200,.42) 45%,rgba(120,40,80,.55) 100%);">
+    <div style="position:absolute;left:${lp}%;width:${hp-lp}%;top:0;height:100%;background:rgba(60,100,200,.28);border-radius:4px;"></div>
+    <div style="position:absolute;left:${fp}%;top:50%;transform:translate(-50%,-50%);width:2px;height:14px;background:rgba(26,82,216,.65);border-radius:1px;"></div>
+    <div style="position:absolute;left:${vp}%;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--ac);border:2px solid rgba(255,255,255,.9);box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>
+  </div>
+  <span style="font-weight:500;">3.5%</span>
+  <span style="padding:2px 8px;border-radius:8px;background:#EBF4FF;color:var(--ac);font-weight:600;">● 変動 ${V.toFixed(2)}%</span>
+  <span style="padding:2px 8px;border-radius:8px;background:rgba(26,82,216,.08);color:var(--cf);font-weight:600;">｜ 固定 ${F.toFixed(2)}%</span>
+  <span style="font-size:9px;">橙帯 = ターミナルレート 1.25〜1.75%</span>
+  </div>`;
+}
+
+// ── Icons & init ────────────────────────────────────────────────────────────
+const ICONS={
+  home:`<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M3 9.5L10 3L17 9.5V17H13V12H7V17H3V9.5Z"/></svg>`,
+  move:`<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7L7 3L11 7M7 3V13"/><path d="M17 13L13 17L9 13M13 17V7"/></svg>`,
+  sw:`<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7H16M13 4L16 7L13 10"/><path d="M16 13H4M7 10L4 13L7 16"/></svg>`,
+  chart:`<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,15 7,9 11,12 17,5"/><line x1="3" y1="16" x2="17" y2="16" stroke-width="1.2"/></svg>`,
+  bulb:`<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 3C7.24 3 5 5.24 5 8C5 10.1 6.3 11.7 7 13H13C13.7 11.7 15 10.1 15 8C15 5.24 12.76 3 10 3Z"/><path d="M7.5 15H12.5"/><path d="M8.5 17H11.5"/></svg>`,
+  fam:`<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="6.5" r="2.5"/><path d="M2 18C2 15 4 13 7 13C10 13 12 15 12 18"/><circle cx="14.5" cy="7.5" r="2"/><path d="M11.5 18C11.5 15.5 12.8 14 14.5 14C16.2 14 17.5 15.5 17.5 18"/></svg>`,
+};
+function mkico(n){return`<span class="ico">${ICONS[n]||''}</span>`;}
+
+function initUI(){
+  document.querySelectorAll('.sl').forEach(el=>{
+    const t=el.textContent.trim();
+    if(t.includes('借入'))el.insertAdjacentHTML('afterbegin',mkico('home'));
+    else if(t.includes('住み替え'))el.insertAdjacentHTML('afterbegin',mkico('move'));
+    else if(t.includes('切り替え'))el.insertAdjacentHTML('afterbegin',mkico('sw'));
+    else if(t.includes('グラフ')||t.includes('シナリオ'))el.insertAdjacentHTML('afterbegin',mkico('chart'));
+    else if(t.includes('ライフプラン'))el.insertAdjacentHTML('afterbegin',mkico('fam'));
+  });
+  document.querySelectorAll('.chtit').forEach(el=>el.insertAdjacentHTML('afterbegin',mkico('chart')));
+  document.querySelectorAll('.inslbl').forEach(el=>el.insertAdjacentHTML('afterbegin',mkico('bulb')));
+}
+initUI();
+
+// ── Scroll helper ────────────────────────────────────────────
+function scrollTo_(id){
+  if(id===0){window.scrollTo({top:0,behavior:'smooth'});
+    document.querySelectorAll('.sidebar-item')[0]?.classList.add('active');return;}
+  const el=document.getElementById(id);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+  const map={'mv-section':1,'sw-section':2,'chart-section':3,'lp-card':4};
+  document.querySelectorAll('.sidebar-item')[map[id]??0]?.classList.add('active');
+}
+
+// Augment update() with visual renders
+const _origUpd=update;
+update=function(){
+  _origUpd.apply(this,arguments);
+  try{
+    const V=+document.getElementById('i-var').value||0.8;
+    const F=+document.getElementById('i-fix').value||2.5;
+    mkS(V).forEach((sched,i)=>{
+      const el=document.getElementById('sc-spark-'+(i+1));
+      if(el)el.innerHTML=drawSparkline(sched,V,['#0D9488','#4F46E5','#DC2626'][i]);
+    });
+    const cb=document.getElementById('ctx-bar');
+    if(cb){
+      let rg=cb.querySelector('.rg-wrap');
+      if(!rg){rg=document.createElement('div');rg.className='rg-wrap';cb.appendChild(rg);}
+      rg.innerHTML=renderRateGauge(V,F);
+    }
+  }catch(e){console.warn('visual:',e);}
+};
+update();</script>
+</body>
+</html>
